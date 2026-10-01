@@ -1713,6 +1713,7 @@ Two scripts ship next to this document. They follow the method's own rules: gene
 |---|---|---|
 | `tools/validate_workspace.py <root> [--after-setup] [--run <id>] [--status] [--solo]` | The mechanical checks: V1, V2, V3, V3b, V4, V5, V6, V7, V8 (vague pass conditions), V10, V11, V14, V15, W9, R-L0-03, R-XREF-01 in L3 files. It also prints the §9.5 status. | After scaffolding, after setup (`--after-setup`), before each gate (`--run`), and on any workspace you are asked to audit |
 | `tools/build_rule_index.py` | Rebuilds §A6 from the bold rule IDs and checks that every `§` reference and rule ID resolves | After any edit to this document |
+| `tools/test_templates.py` | Builds a workspace from the §20 templates, runs the validator, simulates setup, and runs the validator again with `--after-setup` | After any edit to §10 or §20 |
 
 The validator does **not** judge quality. W1, W4, W5, W7, V9, V12, and V13, and whether a Human check is a concrete act, still need the walk test.
 
@@ -1986,6 +1987,7 @@ Do NOT load: [other stages' references, prior runs, the whole _shared folder, un
 
 | Check | Pass Condition |
 |-------|---------------|
+| Claims supported | Every claim follows from a named input or is labeled as a guess (R-AUD-01b) |
 | [Check name] | [Unambiguous pass/fail condition] |
 
 ## Outputs
@@ -2000,9 +2002,21 @@ Do NOT load: [other stages' references, prior runs, the whole _shared folder, un
 Reviewer: [Role]. Gate: blocking.
 [One concrete act: read it aloud / verify the numbers against X / confirm the order survived.] Edit the output in place, then set `status: approved`; the next stage reads whatever is here.
 
-<!-- Variants:
-     Final stage:   "Reviewer: [Role]. Gate: final approval. [Act]. Set status: approved; this is the deliverable."
-     Linear stage:  "Gate: auto-advance. No act here; the human reads this at stage [NN]'s gate." -->
+```
+
+Human check variants (replace the section in those stages):
+
+```markdown
+## Human check
+
+Reviewer: {{FINAL_REVIEWER}}. Gate: final approval.
+{{FINAL_HUMAN_CHECK}} Then set `status: approved`; this is the deliverable.
+```
+
+```markdown
+## Human check
+
+Gate: auto-advance. No act here; the human reads this output at stage [NN]'s gate.
 ```
 
 ### 20.7 Setup questionnaire (pairs with §20.8; passes V3) [R][A]
@@ -2039,8 +2053,9 @@ Reviewer: [Role]. Gate: blocking.
 - Type: free text
 - Default: "None beyond the definition of done."
 
-### Q5: What do you always check before anything ships?
+### Q5: Who signs off, and what do they always check before anything ships?
 - `{{FINAL_HUMAN_CHECK}}` → `stages/03_[name]/CONTEXT.md` (Human check line)
+- `{{FINAL_REVIEWER}}` → `stages/03_[name]/CONTEXT.md` (Human check line)
 - Type: free text
 - Example: "Verify every number against the source export."
 
@@ -2093,6 +2108,28 @@ Target sentences: {{VOICE_RIGHT_EXAMPLE_2}}
 
 ## Strategic Rationale
 Why these choices work for {{TARGET_AUDIENCE}}. (Usually not loaded.)
+```
+
+### 20.8b Factory stubs filled by setup (pair with §20.7) [A questionnaire]
+
+```markdown
+# Definition of done (`_shared/definition-of-done.md`)
+
+For: {{TARGET_AUDIENCE}}
+A finished deliverable: {{DEFINITION_OF_DONE}}
+```
+
+```markdown
+# Rules that never bend (`_shared/rules.md`)
+
+{{HARD_RULES}}
+```
+
+```markdown
+# Reusable assets (`_shared/assets.md`)
+
+One home per fact: link to each asset; do not copy it here.
+{{REUSABLE_ASSETS}}
 ```
 
 ### 20.9 `PROGRESS.md` [PB Stack 2.4]
