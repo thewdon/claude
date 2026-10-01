@@ -219,7 +219,7 @@ Jake's Tier 1 teaching predates the invariants and does not use all of them, so 
 | INV-07 | MUST (routing table) | MUST | MUST |
 | INV-08 | SHOULD | MUST | MUST |
 | INV-09 | n/a | MUST | MUST |
-| INV-10 | When units repeat (clients, projects) | When units are instantiated | MUST for record forms |
+| INV-10 | When units repeat (clients, projects); Tier 1 uses a `templates/` room (R-T1-09) | When units are instantiated | MUST for record forms |
 
 "Working folder" means a folder where the agent does a step or that holds one kind of thing. Data leaves (`output/`, `references/`, `drafts/`, a record's internal folders) inherit their purpose from the parent's `CONTEXT.md` or the template, and need no file of their own. [EXT]
 
@@ -244,7 +244,7 @@ This is the home for every limit and threshold. Other sections point here. "Hard
 
 | Item | Target | Hard limit | Unit | Source |
 |---|---|---|---|---|
-| Root `CLAUDE.md` | 30 to 50 lines ("fit on one screen"); 300 to 800 tokens | ~60 lines. Over 40 to 50 lines means "context files hiding inside it". | lines / tokens | [F 3.3][PB 3.2][A][M]; ~800 tokens [P][R] |
+| Root `CLAUDE.md` | 30 to 50 lines ("fit on one screen"); 300 to 800 tokens. Above ~50: check for "context files hiding inside it" | 60 lines | lines / tokens | [F 3.3][PB 3.2][A][M]; ~800 tokens [P][R] |
 | Single-project `CLAUDE.md` (code) | ~15 lines, written in ~10 minutes | same as above | lines | [F 4.4] |
 | Root `CONTEXT.md` (L1) | ~300 tokens (200 to 500) | under 80 lines [I, by analogy] | tokens | [P][R][A] |
 | Stage `CONTEXT.md` (L2) | 200 to 500 tokens; 25 to 80 lines | **under 80 lines** | lines | [R][P][A] |
@@ -614,7 +614,7 @@ Rules:
 | 3 | `## Inputs` | table or list | required | [P][R][A] |
 | 4 | `Do NOT load:` | a line under Inputs, not a heading | strongly recommended | [A template] |
 | 5 | `## Process` | numbered steps | required | [P][R][A] |
-| 6 | `## Checkpoints` | table | creative and analytic stages | [R] |
+| 6 | `## Checkpoints` | table | creative: MUST (validation); analytic: SHOULD (§8.2) | [R]; analytic [EXT] |
 | 7 | `## Audit` | table | creative, analytic, build stages | [R] |
 | 8 | `## Verify` | list (proposed) | optional | [P §6.2] |
 | 9 | `## Outputs` | table or list | required | [P][R][A] |
@@ -1064,7 +1064,7 @@ Record the answers in `_meta/setup-answers.md`, so re-setup, audits, and a secon
   1. Who it is for, and what a finished deliverable looks like → `definition-of-done.md`.
   2. Two examples of past work that sound right and one that sounds wrong → `voice.md`.
   3. Hard constraints that never bend (length, format, brand rules, compliance) → `rules.md`.
-  4. What the human always checks before anything ships → each stage's Human check line.
+  4. What the human always checks before anything ships → the final stage's Human check line (other gates come from the build interview).
   5. What already exists that runs should reuse (templates, examples, data sources) → linked from `_shared/`, one home per fact.
 
 ### 10.3 The `setup` procedure [R CONV Triggers][R placeholder-syntax]
