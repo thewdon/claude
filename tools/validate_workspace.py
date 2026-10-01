@@ -9,7 +9,7 @@ Usage:
   --status       print the pipeline status (§9.5): PENDING / DRAFT / AUDITED / APPROVED / STALE
   --solo         one-owner workspace (§1.5): gate/reviewer fields are optional
 
-Checks implemented: V1 V2 V3 V3b V4 V5 V6 V7 V8 (vague words) V10 V11 V14 V15 W9, R-L0-03, R-XREF-01 in L3.
+Checks implemented: V1 V2 V3 V3b V4 V5 V6 V7 V8 (vague words; class-based presence) V10 V11 V14 V15 W9,\nR-L0-03, R-XREF-01 in L3, R-STATE-05 sidecar conflicts. Every stages/ folder at any depth is checked (nested pipelines, §5.6;\nknowledge-bundle extraction, §16.4).
 Checks NOT implemented (need judgment): W1 W4 W5 W7 V9 V12 V13 and every "concrete act" quality call.
 Exit code 1 if any FAIL. WARN lines are advisory.
 """
@@ -91,96 +91,124 @@ if exists("CLAUDE.md") and exists("AGENTS.md") and read("CLAUDE.md") != read("AG
 routing_text = entry_text + (read("CONTEXT.md") if exists("CONTEXT.md") else "")
 for d in sorted(os.listdir(root)):
     if os.path.isdir(os.path.join(root, d)) and d not in SKIP_DIRS and not d.startswith("."):
-        if d not in routing_text:
+        if not re.search(r"(?i)(^|[\s`/(\[|])" + re.escape(d) + r"(/|`|\b)", routing_text):
             FAIL.append(f"W9 top-level folder {d}/ is not routed from {entry} or CONTEXT.md")
 
-# ---------- stages ----------
-stage_root = os.path.join(root, "stages")
-stages = sorted(x for x in os.listdir(stage_root) if STAGE_DIR.match(x)) if os.path.isdir(stage_root) else []
-seps = {s[2] if s[2] in "_-" else s[3] for s in stages}
-if len(seps) > 1:
-    FAIL.append(f"R-NAME-01 mixed stage separators {sorted(seps)}")
-status_rows = []
-for i, s in enumerate(stages):
-    cp = f"stages/{s}/CONTEXT.md"
-    if not exists(cp):
-        FAIL.append(f"INV-04 {cp} missing")
-        continue
-    t = read(cp)
-    lines = len(t.splitlines())
-    if lines >= 80:
-        FAIL.append(f"V10 {cp} is {lines} lines (must be under 80)")
-    heads = [h.strip() for h in re.findall(r"^## (.+)$", t, re.M)]
-    for h in heads:
-        if h not in ALLOWED:
-            FAIL.append(f"V6 {cp} disallowed section '## {h}' (R-CTR-30)")
-    for req in ("Inputs", "Process", "Outputs"):
-        if req not in heads:
-            FAIL.append(f"R-CTR {cp} missing ## {req}")
-    if "Human check" not in heads:
-        WARN.append(f"R-CTR-24 {cp} has no ## Human check (repo-style stages should gain one)")
-    if not re.search(r"^Do NOT load", t, re.M | re.I):
-        WARN.append(f"R-CTR-10 {cp} has no 'Do NOT load' line")
-    hc = section(t, "Human check") or ""
-    gate = re.search(r"Gate:\s*(blocking|auto-advance|final approval)", hc)
-    if not SOLO and "Human check" in heads and (not gate or "Reviewer:" not in hc):
-        FAIL.append(f"V15 {cp} Human check lacks 'Gate:' and/or 'Reviewer:' (use --solo for one-owner workspaces)")
-    # V7 checkpoint step numbers
-    proc = section(t, "Process") or ""
-    steps = {int(x) for x in re.findall(r"^\s*(\d+)\.", proc, re.M)}
-    cps = section(t, "Checkpoints")
-    if cps:
-        for row in re.findall(r"^\|\s*(\d+)\s*\|", cps, re.M):
-            if int(row) not in steps:
-                FAIL.append(f"V7 {cp} checkpoint after step {row}, which is not a Process step")
-    aud = section(t, "Audit")
-    if aud:
-        for chk, cond in re.findall(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|", aud, re.M):
-            if chk.lower() in ("check", "-------") or set(chk) <= set("-: "):
+# ---------- stages (every pipeline: any stages/ folder outside _archive, at any depth) ----------
+def find_pipelines():
+    found = []
+    for d, dirs, _ in walk():
+        if os.path.basename(d) == "stages" and any(STAGE_DIR.match(x) for x in dirs):
+            found.append(os.path.dirname(d))
+    return sorted(found)
+
+
+def strip_dnl(text):
+    return "\n".join(l for l in text.splitlines() if not re.match(r"\s*\**Do NOT load", l, re.I))
+
+
+status_report = []
+for pipe in find_pipelines():
+    stage_root = os.path.join(pipe, "stages")
+    prel = rel(pipe)
+    stages = sorted(x for x in os.listdir(stage_root) if STAGE_DIR.match(x))
+    seps = {re.match(r"^\d\d[a-z]?([_-])", s).group(1) for s in stages}
+    if len(seps) > 1:
+        FAIL.append(f"R-NAME-01 {prel}: mixed stage separators {sorted(seps)}")
+    if prel != "." and not exists(os.path.join(prel, "CONTEXT.md")):
+        WARN.append(f"{prel}: nested pipeline has no root CONTEXT.md (§5.6)")
+    rows = []
+    for i, s in enumerate(stages):
+        cp = rel(os.path.join(stage_root, s, "CONTEXT.md"))
+        if not os.path.exists(os.path.join(stage_root, s, "CONTEXT.md")):
+            FAIL.append(f"INV-04 {cp} missing")
+            continue
+        t = read(cp)
+        lines = len(t.splitlines())
+        if lines >= 80:
+            FAIL.append(f"V10 {cp} is {lines} lines (must be under 80)")
+        heads = [h.strip() for h in re.findall(r"^## (.+)$", t, re.M)]
+        for h in heads:
+            if h not in ALLOWED:
+                FAIL.append(f"V6 {cp} disallowed section '## {h}' (R-CTR-30)")
+        for req in ("Inputs", "Process", "Outputs"):
+            if req not in heads:
+                FAIL.append(f"R-CTR {cp} missing ## {req}")
+        if "Human check" not in heads:
+            WARN.append(f"R-CTR-24 {cp} has no ## Human check (repo-style stages should gain one)")
+        if not re.search(r"^\**Do NOT load", t, re.M | re.I):
+            WARN.append(f"R-CTR-10 {cp} has no 'Do NOT load' line")
+        hc = section(t, "Human check") or ""
+        gate = re.search(r"Gate:\s*(blocking|auto-advance|final approval)", hc)
+        if not SOLO and "Human check" in heads and (not gate or "Reviewer:" not in hc):
+            FAIL.append(f"V15 {cp} Human check lacks 'Gate:' and/or 'Reviewer:' (use --solo for one-owner workspaces)")
+        cls_m = re.search(r"Class:\s*(creative|analytic|build|linear)", t)
+        cls = cls_m.group(1) if cls_m else None
+        if not cls:
+            WARN.append(f"§8.2 {cp} declares no 'Class:' (creative|analytic|build|linear); class-based checks skipped")
+        proc = section(t, "Process") or ""
+        steps = {int(x) for x in re.findall(r"^\s*(\d+)\.", proc, re.M)}
+        cps = section(t, "Checkpoints")
+        if cps:
+            for row in re.findall(r"^\|\s*(\d+)\s*\|", cps, re.M):
+                if int(row) not in steps:
+                    FAIL.append(f"V7 {cp} checkpoint after step {row}, which is not a Process step")
+        elif cls == "creative":
+            FAIL.append(f"V7 {cp} is a creative stage with no ## Checkpoints")
+        aud = section(t, "Audit")
+        if aud:
+            for chk, cond in re.findall(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|", aud, re.M):
+                if chk.lower() == "check" or set(chk) <= set("-: "):
+                    continue
+                if re.search(r"\b(good|fine|appropriate|high quality|looks right)\b", cond, re.I):
+                    FAIL.append(f"V8 {cp} audit '{chk}' has a vague pass condition")
+            if cls in ("creative", "analytic") and not re.search(r"claims? supported", aud, re.I):
+                WARN.append(f"R-AUD-01b {cp} ({cls}) has no 'Claims supported' audit row")
+        elif cls in ("creative", "analytic", "build"):
+            FAIL.append(f"V8 {cp} is a {cls} stage with no ## Audit")
+        inp = strip_dnl(section(t, "Inputs") or "")
+        for loc in re.findall(r"`([^`]*(?:/|\.md|\.csv|\.json)[^`]*)`", inp):
+            if loc.startswith(("~", "/", "http")):
                 continue
-            if re.search(r"\b(good|fine|appropriate|high quality|looks right)\b", cond, re.I):
-                FAIL.append(f"V8 {cp} audit '{chk}' has a vague pass condition")
-    elif gate and gate.group(1) != "auto-advance":
-        WARN.append(f"V8 {cp} has no ## Audit (required for creative, analytic, build stages)")
-    # V1 + V5 + V2
-    inp = section(t, "Inputs") or ""
-    inp_rows = "\n".join(l for l in inp.splitlines() if not re.match(r"\s*\**Do NOT load", l, re.I))
-    paths = re.findall(r"`([^`]*(?:/|\.md|\.csv|\.json)[^`]*)`", inp_rows)
-    for loc in paths:
-        if loc.startswith(("~", "/", "http")):
-            continue
-        path = loc.replace("<run-id>", RUN) if RUN else loc
-        optional = re.search(re.escape(loc) + r"[^\n]*optional", inp, re.I)
-        if any(c in path for c in "<{*") or "..." in path:
-            continue
-        full = os.path.normpath(os.path.join(root, "stages", s, path))
-        is_working = "/output/" in path or path.startswith("output/") or "input/" in path
-        if (not is_working or RUN) and not os.path.exists(full) and not optional:
-            FAIL.append(f"V1 {cp} input does not resolve: {loc}")
-    if i > 0 and "../" + stages[i - 1] + "/output/" not in t:
-        WARN.append(f"V5 {cp} does not read ../{stages[i - 1]}/output/ (fine only if it reads an earlier stage on purpose)")
-    for m in re.findall(r"\.\./(\d\d[a-z]?[_-][a-z0-9-]+)/", t):
-        if m in stages and stages.index(m) > i:
-            FAIL.append(f"V2 {cp} points forward to {m} (R-XREF-01)")
-    # status
-    out_dir = os.path.join(stage_root, s, "output")
-    files = [f for f in (os.listdir(out_dir) if os.path.isdir(out_dir) else []) if f not in (".gitkeep",) and not f.endswith(".status") and os.path.isfile(os.path.join(out_dir, f))]
-    primary = [f for f in files if (header_status(f"stages/{s}/output/{f}") or "") not in ("", "generated")]
-    if not files:
-        st = "PENDING"
-    elif primary:
-        st = header_status(f"stages/{s}/output/{primary[0]}").upper()
-        st = {"REVISED": "DRAFT", "FINAL": "APPROVED"}.get(st, st)
-    else:
-        st = "COMPLETE (no gate status in header)"
-    status_rows.append((s, st, files[:3]))
+            path = loc.replace("<run-id>", RUN) if RUN else loc
+            optional = re.search(re.escape(loc) + r"[^\n]*optional", inp, re.I)
+            if any(c in path for c in "<{*") or "..." in path:
+                continue
+            full = os.path.normpath(os.path.join(stage_root, s, path))
+            is_working = "/output/" in path or path.startswith("output/") or "input/" in path
+            if (not is_working or RUN) and not os.path.exists(full) and not optional:
+                FAIL.append(f"V1 {cp} input does not resolve: {loc}")
+        if i > 0 and "../" + stages[i - 1] + "/output/" not in t:
+            WARN.append(f"V5 {cp} does not read ../{stages[i - 1]}/output/ (fine only if it reads an earlier stage on purpose)")
+        for m in re.findall(r"\.\./(\d\d[a-z]?[_-][a-z0-9-]+)/", strip_dnl(t)):
+            if m in stages and stages.index(m) > i:
+                FAIL.append(f"V2 {cp} points forward to {m} (R-XREF-01)")
+        out_dir = os.path.join(stage_root, s, "output")
+        files = [f for f in (os.listdir(out_dir) if os.path.isdir(out_dir) else [])
+                 if f != ".gitkeep" and not f.endswith(".status") and os.path.isfile(os.path.join(out_dir, f))]
+        for f in files:
+            fp = rel(os.path.join(out_dir, f))
+            if exists(fp + ".status"):
+                hs = re.search(r"^(?:\*\*)?status(?:\*\*)?:\s*\**\s*([a-z-]+)", read(fp)[:1500], re.M | re.I) if f.endswith(".md") else None
+                if hs and hs.group(1).lower() != read(fp + ".status").strip().split()[0].lower():
+                    WARN.append(f"R-STATE-05 {fp}: header status and .status sidecar disagree")
+        primary = [f for f in files if (header_status(rel(os.path.join(out_dir, f))) or "") not in ("", "generated")]
+        if not files:
+            st = "PENDING"
+        elif primary:
+            st = header_status(rel(os.path.join(out_dir, primary[0]))).upper()
+            st = {"REVISED": "DRAFT", "FINAL": "APPROVED"}.get(st, st)
+        else:
+            st = "COMPLETE (no gate status in header)"
+        rows.append((s, st, files[:3]))
+    status_report.append((prel, rows))
 
 # ---------- L3 bodies must not point into stages ----------
 for f in md_files():
     top = f.split("/")[0]
     if top in ("_shared", "shared", "_config", "brand-vault", "design-system") and re.search(r"stages/\d\d[_-]", read(f)):
         WARN.append(f"R-XREF-01 {f} (L3) names a stage path: fine if purely descriptive, a violation if stages depend on it pointing back")
-    if (top in ("_shared", "shared") or "/references/" in f) and re.search(r"<[a-z][a-z0-9-]+>", read(f)):
+    if (top in ("_shared", "shared") or "/references/" in f) and re.search(r"<[a-z][a-z0-9-]+>", re.sub(r"```.*?```", "", read(f), flags=re.S)):
         WARN.append(f"V2 {f} contains a <per-run variable> in an L3 body")
 
 # ---------- setup: V3, V4 ----------
@@ -226,7 +254,7 @@ elif used and not AFTER:
 
 # ---------- V3b author fill-ins ----------
 for f in md_files():
-    if f.startswith(("_meta/", "skills/")) or f == qp:
+    if f.startswith(("_meta/", "skills/")) or "_templates/" in f or f == qp:
         continue
     body = re.sub(r"```.*?```", "", read(f), flags=re.S)  # examples inside code fences are formats, not fill-ins
     for m in FILLIN.findall(body):
@@ -234,7 +262,7 @@ for f in md_files():
         break
 
 # ---------- V11 naming, .gitkeep ----------
-for d, dirs, files in walk():
+for d, dirs, files in walk(include_archive=True):
     for x in files + dirs:
         if x in UPPER_OK or x in SKIP_DIRS or x.startswith(("LICENSE", "NOTICE")):
             continue
@@ -263,11 +291,15 @@ for d, _, files in walk(include_archive=True):
             pass
 
 # ---------- report ----------
-if STATUS and stages:
-    print(f"Pipeline Status: {os.path.basename(root)}" + (f"   (run {RUN})" if RUN else ""))
-    print("  " + "  ---->  ".join(f"[{s}]" for s, _, _ in status_rows))
-    for s, st, fs in status_rows:
-        print(f"    {s}: {st}" + (f"  ({', '.join(fs)})" if fs else ""))
+if STATUS:
+    for prel, rows in status_report:
+        name = os.path.basename(root) if prel == "." else prel
+        print(f"Pipeline Status: {name}" + (f"   (run {RUN})" if RUN else ""))
+        print("  " + "  ---->  ".join(f"[{s}]" for s, _, _ in rows))
+        for s, st, fs in rows:
+            print(f"    {s}: {st}" + (f"  ({', '.join(fs)})" if fs else ""))
+    if not status_report:
+        print("No pipeline (no stages/ folder found).")
 for w in WARN:
     print("WARN", w)
 for f in FAIL:

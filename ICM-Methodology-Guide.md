@@ -3,7 +3,7 @@ title: "Interpretable Context Methodology (ICM): An AI-Consumable Specification 
 aliases: ["ICM", "Model Workspace Protocol", "MWP", "folder structure as agent architecture", "Clief Notes method", "Map / Rooms / Tools"]
 method_author: "Jake Van Clief (with David McDermott). Eduba; Clief Notes community"
 compiled: 2026-10-01
-document_version: 0.4
+document_version: 0.5
 intended_reader: "An AI agent that will design, build, restructure, validate, or operate ICM workspaces, skills, and workflows"
 ---
 
@@ -175,6 +175,7 @@ Several mechanisms in this document exist for shared, templated, or multi-review
 | Build artifacts in `_meta/build/` | Intake + workflow map merged in one file; skip the DAG diagram for a linear pipeline | Keep | Keep |
 | Meta snapshot in every stage (R-RUN-04) | Read the entry meta by path | Either | Either |
 | Full validation (§17) | Walk test + V1, V5, V10 | Matrix (§17.3) | Matrix + ship checklist |
+| New-run procedure and run meta | New-run steps inside the pipeline's CONTEXT.md; skip the meta file when the entry stage collects nothing | `setup/new-run.md` | `setup/new-run.md` |
 
 - **R-PROP-01 (SHOULD)** Start at the left column. Move right only when a second person, a second deployment, or a published template actually exists. "Let the structure grow from use, not from planning." [F 3.3]
 - **R-PROP-02 (MUST)** The proportionality table never relaxes INV-01 to INV-09, or the one rule that a human reads each output before the next stage uses it.
@@ -430,9 +431,27 @@ The procedure is in §15.1. Maintenance:
 
 ### 5.6 Graduating from Tier 1 to Tier 2
 
-When a sequence inside a room starts repeating (for example script → spec → build → render), turn the room into a pipeline: numbered stage folders, contracts, and `output/` handoffs (§6). The Map keeps routing to it. The origin system did this: an umbrella of rooms (brand-vault, script-lab, topic-engine, animation-studio...) in which `animation-studio` held `workflows/01-scripts → 02-specs → 03-builds → 04-renders`. [O][I]
+When a sequence inside a room starts repeating (for example script → spec → build → render), it becomes a pipeline with numbered stage folders, contracts, and `output/` handoffs (§6), and the Map keeps routing to it. The origin system did this: an umbrella of rooms (brand-vault, script-lab, topic-engine, animation-studio...) in which `animation-studio` held `workflows/01-scripts → 02-specs → 03-builds → 04-renders`. [O][I]
 
----
+**Graduation procedure [EXT].**
+- **Trigger.** A room task graduates when it has repeated at least three times with the same steps and produces a saved artifact a human approves between sessions. A monthly cadence counts; D3's "weekly" is a good sign, not a gate.
+- **Where it goes.** The room keeps its `CONTEXT.md`, and the pipeline grows in a subfolder:
+
+```
+room/
+├── CONTEXT.md              room form; add one line: "<task> is a pipeline: <pipeline>/CONTEXT.md"
+└── <pipeline>/
+    ├── CONTEXT.md          L1 Shape A, plus the status method (header or sidecar) and the run-ID format
+    ├── setup/new-run.md    (solo: the new-run steps may sit in this CONTEXT.md instead)
+    ├── scripts/            if any
+    ├── _archive/runs/
+    └── stages/NN_name/{CONTEXT.md, references/, output/, input/ (entry stage)}
+```
+
+- **What stays at the root.** There is no nested CLAUDE.md. The root Map gets one routing row and "the one rule". PROGRESS.md stays at the root.
+- **What to run.** Run §15.2 steps 3, 4, 6, and 7 (the interview already happened through use).
+- **History.** Hand-made past outputs stay where they are as history. Seed the prior values from them through R-RUN-20. Optionally promote one to a curated exemplar (R-QUAL-02).
+- **Cross-room reads.** A nested pipeline MAY declare named Working inputs from sibling rooms, one file or section at a time, never a whole room. Client isolation (R-T1-05) still applies.
 
 ## 6. Tier 2: Pipeline Structure and Naming
 
@@ -615,7 +634,7 @@ Rules:
   - Too vague: "Generate ideas." Good: "Propose 3-5 concept angles, each as a single sentence. Tag each with its value type and format."
 - **R-CTR-13 (SHOULD)** Keep it short. "Constraints live in L3 files, not restated here." "Contracts that restate reference material (point instead)" is a named failure. [A]
 - **R-CTR-14 (MAY)** Restate hard limits worth repeating (length, count, format: "Keep under 90 seconds spoken"), with the canonical file named in parentheses. [A]; pointer [EXT]
-- **R-CTR-15 (SHOULD)** Mark checkpoint steps inline: `**[Checkpoint N]** -- Present X to the human for Y`. [R]
+- **R-CTR-15 (SHOULD)** Mark checkpoint steps inline: `**[Checkpoint N]** -- Present X to the human for Y`. The Checkpoints table's "After Step" is the step just before the marker. [R]
 - **R-CTR-16 (SHOULD)** The second-to-last step is usually "Run the audit checks below. If any fail, revise before saving." The last step is "Save to output/". [R]
 - **R-CTR-17 (SHOULD)** In the entry stage, step 1 restates the task in one sentence so the human can confirm scope (a checkpoint after step 1). Then collect the per-run metadata (name, topic, audience, scope) and write it to `output/<slug>-meta.md`. [R voice-driven 01-research, course-deck 01-extraction]
 - **R-CTR-18 (SHOULD)** Frame steps as production ("read X, produce Y"), not exploration ("help me explore X"). [X][I]
@@ -904,7 +923,7 @@ Pipeline Status: weekly-ops-digest   (run 2026-w39)
 The next stage MUST NOT start while its predecessor is DRAFT or STALE. An auto-advance predecessor must be AUDITED (§9.6). [EXT, implementing INV-06]
 
 - **R-STATE-04 (MUST)** Only a stage's primary artifact carries a gate `status`, and it alone sets the stage's state. Supporting files (meta, script tables, logs) carry none, or `status: generated`. [EXT]
-- **R-STATE-05 (MUST)** Never hand-edit a generated file to approve it. The generator takes a `--status` argument, or status lives in a sidecar `<artifact>.status` file. Pick one per workspace and state it in CLAUDE.md. [EXT, reconciling R-LIB-03]
+- **R-STATE-05 (MUST)** Never hand-edit a generated file to approve it. The generator takes a `--status` argument, or status lives in a sidecar `<artifact>.status` file. Pick one per pipeline and state it in the pipeline's root CONTEXT.md. If a header status and a sidecar disagree, the validator warns. [EXT, reconciling R-LIB-03]
 - **R-STATE-06 (SHOULD)** Record checkpoint decisions in the primary artifact's header as `checkpoint-N: <decision>` lines, so the steering survives the session (INV-06, R-LIB-06). [EXT]
 
 ### 9.6 Human review and gate types
@@ -1449,6 +1468,10 @@ workspace/
 - The reading protocol: always-load layer first, task-relevant nodes second, evidence only when needed. Never read the whole bundle.
 - `access_tier` gates what may leave the machine.
 - Regenerating the bundle is a factory run, and every change appends to a log.
+- **Publishing [EXT].** The extraction pipeline's last stage writes a complete change set to its own `output/`. A declared script promotes it into `bundle/` only after the change set is `status: approved`. The script refuses unapproved input, appends to `bundle/log.md` (append-only, script-written), and regenerates `bundle/index.md` and `corpus/_index.md`. Extraction stages MAY read `bundle/index.md` and `bundle/log.md` as `Product state (read-only)` inputs, to diff and avoid duplicates.
+- **Evidence notes point, never copy [EXT].** A layer-C note gives the corpus path, version and date, the clauses relied on, and at most one short quote per clause. `corpus/` stays canonical (R-LIB-02).
+- **Frontmatter values [EXT].** `layer: A|B|C`; `access_tier: public|internal|private`; `type:` from a closed list in `_meta/schema.md`; `strength:` optional.
+- **Policy and FAQ corpora [EXT].** Layer A holds the principles that apply to every question; layer B holds one topic note per question area; layer C holds evidence pointers. The "how does this think" warning below applies to person bundles.
 
 Watch for: reading the bundle as a search index instead of a model (it answers "how does this think", not "find me the file"); frontmatter fields nobody queries (cut them); extraction runs that edit the product by hand (fix the factory instead).
 
@@ -1481,7 +1504,7 @@ Watch for: a schema that mandates names the files stopped using; duplicate entry
 
 ### 16.6 System map: a body of work as an edit graph [A system-map]
 
-Use it when someone will change a tree they do not hold in their head ("map this repo", "what would a change hit"). Do not use it for a production line, an org chart, or a model of how someone thinks. "If the tree is small enough that one `CONTEXT.md` plus an index answers 'what is X' and 'what else moves,' stop there."
+Use it when someone will change a tree they do not hold in their head ("map this repo", "what would a change hit"). A rule of thumb [EXT]: under about 15 source files, or fewer than 3 nouns with name collisions, needs only one CONTEXT.md and an index. Do not use it for a production line, an org chart, or a model of how someone thinks. "If the tree is small enough that one `CONTEXT.md` plus an index answers 'what is X' and 'what else moves,' stop there."
 
 ```
 map/                         next to existing orientation (docs/, developer-docs/, vault root), never inside src/
@@ -1493,7 +1516,7 @@ map/                         next to existing orientation (docs/, developer-docs
 │  ├─ CONTEXT.md
 │  ├─ _index.md              one line per noun (stub | verified | stale)
 │  └─ <cluster>/             cards, clustered by how an editor asks, not by folder layout
-├─ processes/                only after nouns exist; only real movements
+├─ processes/                only after nouns exist; only real movements (own CONTEXT.md)
 └─ effects/CONTEXT.md        "if you are changing X, open these cards"
 ```
 
@@ -1507,6 +1530,10 @@ map/                         next to existing orientation (docs/, developer-docs
   - 4 Change-impact index: then walk it backwards and ask the owner what points INTO the tree from outside.
   - 5 Re-verify the load-bearing claims: "Wrong waterfalls are more expensive than missing cards."
 - **Status.** `verified` requires a date, a commit or revision, and citations. `stale` is allowed. "A confident wrong date is not."
+- **Card frontmatter [EXT].** `type, name, code_name, universe (live|leftover|ghost), status (stub|verified|stale), verified_on, verified_at (commit)`.
+- **Generated catalog [EXT].** `objects/_index.md`, `AGENTS.md`, and `routing.md` (for tools that read `routing.md`) are generated by a script such as `map/_meta/build_map.py`. In slice 1 the index comes from frontmatter-only stub cards, so it is generated from the start. Record each slice gate in `_meta/slices.md` (slice, date, passed by).
+- **No entry file in the subject [EXT].** Create a single-project CLAUDE.md (§20.3) whose only map line points to `map/CLAUDE.md`. Leave human docs untouched, list their stale claims under *ghost* in `map/CONTEXT.md`, and report them to the owner. "Code wins" applies to docs as well as comments.
+- **Ghost movements [EXT].** They get no process card. Record them on the ghost object's card.
 - **The seven object-card sections.**
   1. One sentence (the product name and the code name, if they differ).
   2. Why this shape.
@@ -1522,7 +1549,7 @@ map/                         next to existing orientation (docs/, developer-docs
   3. Does one card cite its source, state the why, and give a first-order waterfall?
   4. Can `effects/CONTEXT.md` name what a given change hits and what it does not?
   5. Does a `See` link land on source, not on another essay?
-  6. Do entry + hub + one card fit in 2k to 8k tokens?
+  6. Do entry + hub + one card stay at or under about 8k tokens?
 
 Watch for: mapping aspirations as live (ghost them); copying as-built behavior into cards (point at the owning file); empty `processes/` or `effects/` folders; two hand-edited entry files; `verified` with no citations; slurping all of `objects/` in a later session; an `effects/` index that only walks outward.
 
@@ -1758,9 +1785,9 @@ These are expected differences, not errors in his method.
 
 1. **Classify the request** (§1.1): build, restructure, skill, run, or setup.
 2. **Proportionality** (§1.5): one owner means minimal ceremony. Add setup, templates, and approval metadata only when they pay.
-3. **Does it need a workspace?** One-off → chat. Fits one prompt → a skill. Not yet repeating → wait. Repeating with several parts → a workspace.
+3. **Does it need a workspace?** One-off → chat. Fits one prompt → a skill: no state between runs, and no saved artifact a human approves between sessions (D2). Not yet repeating → wait. Repeating with several parts → a workspace.
 4. **Which tier or form?** Ongoing kinds of work → Rooms. A reviewed sequence that repeats → Pipeline. A record, knowledge, an organization, or a codebase → the matching form.
-5. **Root CLAUDE.md**: about 30 to 60 lines, routes only. The routing table is Task | Go to | Read | Skills.
+5. **Root CLAUDE.md**: target 30 to 50 lines, limit about 60, routes only. Tier 1 routing: Task | Go to | Read | Skills. Tier 2 and above: If | Go to | Then stop at.
 6. **Rooms**: start with 2 to 3, split by mental mode. CONTEXT.md under a page, 80% about the work, kept up to date.
 7. **Stages**: cut where the human pauses. Surface judgment calls as editable files before the expensive work. Classify each stage as creative, analytic, build, or linear.
 8. **Each stage**: `CONTEXT.md` containing:
@@ -1772,17 +1799,17 @@ These are expected differences, not errors in his method.
    - Outputs, each with a header
    - Human check: one act, the reviewer, and the gate type
 
-   Plus `references/` and `output/`, and `input/` for the entry stage.
+   Plus `references/` and `output/`, and `input/` for the entry stage. Put a `Class:` on the job line (creative, analytic, build, or linear). Creative stages get at least one checkpoint. Creative and analytic stages get the audit row "Claims supported". Research stages follow R-EVID: link sources, surface conflicts, assert no unsourced numbers. Put a `.gitkeep` in every empty folder.
 9. **Factory** (`_shared/`, `references/`, `skills/`) sits apart from **product** (`input/`, `output/`).
 10. **Budget**: 2k to 8k tokens per stage. Over budget → split the stage, tighten the inputs, or push detail down into references.
 11. **One home per fact.** References point one way. Indexes and numbers are generated by script.
 12. **Limits** live in §3.
 13. **Setup**: flat list, all questions at once, system-level only, defaults, examples rather than descriptions, no `{{` left afterwards.
-14. **Run**: archive the old run, drop the inputs, restate the task, collect the metadata, then run stage by stage. States go PENDING → DRAFT (or AUDITED) → APPROVED. A re-run upstream marks everything downstream STALE. Nothing moves on until a human has read the last output.
+14. **Run**: (`setup/new-run.md`, §20.15) archive the old run, drop the inputs, restate the task, collect the metadata, then run stage by stage. States go PENDING → DRAFT (or AUDITED) → APPROVED. A re-run upstream marks everything downstream STALE. Nothing moves on until a human has read the last output. Last run's output is read only as `Prior run (data only)` from `_archive/runs/` (optional on the first run), and never to learn style.
 15. **Problems**: fix upstream and re-run forward; use the loop-back table; turn recurring edits into source changes.
 16. **Sessions**: read CLAUDE.md and PROGRESS.md, verify against the files, work, update PROGRESS.md.
 17. **Prompts**: Identity, Task, Context, Constraints, Output Format. One ask per prompt. Correct in place.
-18. **Validate**: walk test, matrix checks, one end-to-end run.
+18. **Validate**: `python3 tools/validate_workspace.py <root> [--solo] [--run <id>] [--status]`, then the walk test, then one end-to-end run.
 
 ---
 
@@ -1801,6 +1828,7 @@ You are helping [NAME] with [WHAT THEY DO], for [AUDIENCE].
 - /[room-1]: [what happens here]
 - /[room-2]: [what happens here]
 - /_shared: references used by more than one room
+<!-- After a room grows a pipeline (§5.6), add: "Nothing moves to the next stage until a person has read the output of the last one." -->
 
 ## Routing
 | Task | Go to | Read | Skills |
@@ -1925,13 +1953,14 @@ Status is whatever exists: PENDING (no artifact), DRAFT, APPROVED (from the outp
 ```markdown
 # [NN]_[stage-name]: [the job in about five words]
 
-One job: [the single thing this stage does].
+One job: [the single thing this stage does]. Class: [creative | analytic | build | linear].
 
 ## Inputs
 
 | Source | File/Location | Section/Scope | Why |
 |--------|--------------|---------------|-----|
 | Working (this run) | `../[NN-1]_[prev]/output/<run-id>-[artifact].md` | Full file | The artifact to transform |
+| Prior run (data only) | `../../_archive/runs/<prior-run-id>/[NN]_[stage]/<prior-run-id>-[artifact].md` | [Section] (optional; skip if absent) | [Why the comparison matters] |
 | Reference (every run) | `../../_shared/voice.md` | "Hard Constraints" through "What the Voice Is NOT" | Tone rules |
 | Reference (every run) | `references/[stage-guide].md` | Full file | Structure for this stage |
 
@@ -1964,6 +1993,7 @@ Do NOT load: [other stages' references, prior runs, the whole _shared folder, un
 | Artifact | Location | Format |
 |----------|----------|--------|
 | [Name] | `output/<run-id>-[artifact].md` | Header (status, source, targets) + body + Open Questions |
+| Run meta (entry stage only) | `output/<run-id>-meta.md` | `status: generated`; read by [Consumer stages] |
 
 ## Human check
 
@@ -2208,6 +2238,24 @@ Approved by: [name] on [YYYY-MM-DD]   (leave blank until approved)
 Case-folded collisions: [none, or list]
 External consumers named by the owner: [list]
 Parity method: [count + hash | text parity for conversions]
+```
+
+### 20.15 `setup/new-run.md` [EXT, implementing §9.1]
+
+```markdown
+# New run
+
+Trigger: "new run" (routed from CLAUDE.md).
+
+1. Read PROGRESS.md. Confirm the last run's final output is `status: approved`.
+   If not, ask whether to finish it or archive it as `<run-id>-abandoned`.
+2. Move every `stages/*/output/*` file and `stages/01_[entry]/input/*` to
+   `_archive/runs/<prior-run-id>/<NN_stage>/`. Verify the file count matches.
+   Mask or drop personal-data columns in the archived copy (R-SEC-06).
+3. Leave `.gitkeep` in every emptied folder.
+4. Ask the human to drop this run's inputs into `stages/01_[entry]/input/`.
+5. Go to `stages/01_[entry]/CONTEXT.md`. Step 1 restates the task and writes `<run-id>-meta.md`.
+6. Record the new run in PROGRESS.md.
 ```
 
 ---
