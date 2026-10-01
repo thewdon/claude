@@ -3,7 +3,7 @@ title: "Interpretable Context Methodology (ICM): An AI-Consumable Specification 
 aliases: ["ICM", "Model Workspace Protocol", "MWP", "folder structure as agent architecture", "Clief Notes method", "Map / Rooms / Tools"]
 method_author: "Jake Van Clief (with David McDermott). Eduba; Clief Notes community"
 compiled: 2026-10-01
-document_version: 0.3
+document_version: 0.4
 intended_reader: "An AI agent that will design, build, restructure, validate, or operate ICM workspaces, skills, and workflows"
 ---
 
@@ -37,6 +37,7 @@ An agent mid-task SHOULD stay in Part I.
 | Start or continue a run | §9 | §11 for sessions |
 | Write prompts inside a workspace | §12 | |
 | Check limits and thresholds | §3 | |
+| Decide how much ceremony a workspace needs | §1.5 | |
 | Review a workspace for problems | §17, §18 | |
 
 ### 0.2 Normative keywords
@@ -123,7 +124,7 @@ One AI agent, reading the right files at the right moment, replaces a multi-agen
 |---|---|---|---|
 | D0 | Does any part need real-time agent-to-agent loops, many simultaneous users, or automated branching on AI output mid-run? | Keep that part out of ICM and use a framework for it. Continue with the rest. | [P §5.2][A] |
 | D1 | Is it a one-off? | Do it in chat. No files. STOP. | [A] |
-| D2 | Does it repeat, and fit in one saved prompt or one skill? A [EXT] threshold for "fits": about one screen of instructions, no state carried between runs, no human review needed between steps. | Write a saved prompt or a skill (§14). Do not build a workspace. STOP. | [A]; threshold [EXT] |
+| D2 | Does it repeat, and fit in one saved prompt or one skill? A [EXT] threshold for "fits": about one screen of instructions plus references and scripts; no state carried between runs; no saved artifact that a human must approve before a later session continues. In-session checkpoints are fine in a skill (R-SKW-04). | Write a saved prompt or a skill (§14). Do not build a workspace. STOP. | [A]; threshold [EXT] |
 | D3 | Is it repeating already, or is it ongoing work the person does regularly? "Weekly or more often" and "3-15 steps" that "are the same each time" are good signs. Fewer than 3 steps is faster done by hand; more than 15 "gets fragile" unless split. | If NO (planned, imagined, or done twice), do not build yet: "A workspace for a thing done twice is scaffolding, not architecture." Offer a saved prompt and revisit after real repetitions. STOP. | [A][PB 2.3] |
 | D4 | Is it ongoing work across several *kinds* of task (writing, analysis, clients, code areas) with no fixed sequence? | **Tier 1: Rooms** (§5). | [F] |
 | D5 | Is it a repeating sequence producing a deliverable each run, where a human should check the key steps (sequential + reviewable + repeatable)? | **Tier 2: Pipeline** (§6 to §9). | [P §5.1][R] |
@@ -159,6 +160,24 @@ Tiers and forms line up as follows: **Tier 1 = Rooms** (closest to an Umbrella w
 The paper's version: "for a large and common class of workflows, the existing tools provide more complexity than the problem requires, and that complexity has real costs: opacity, fragility, developer dependency, and overhead that slows iteration." [P §5.2] Frameworks fit complex, concurrent systems. [P]
 
 MCP is complementary: it handles tool and data access, while ICM handles how context is structured across stages. A stage MAY use MCP. [P §2.2][R]
+
+### 1.5 Proportionality: add ceremony only when it pays [EXT, applying A "don't over-structure" and F "keep the system small"]
+
+Several mechanisms in this document exist for shared, templated, or multi-reviewer workspaces. Scale them to the deployment.
+
+| Mechanism | One owner, one deployment | Shared team workspace | Published or reusable template |
+|---|---|---|---|
+| Setup questionnaire and `{{placeholders}}` (§10) | Skip. Write the factory files directly. | Optional | Required |
+| Template/instance split (R-LIB-05) | Skip until a second deployment is planned | When a second team adopts it | Required |
+| Approval metadata (`approved_by`, `approved_on`) | Bare `status: approved`; Reviewer: owner | Required | Required in instances |
+| Gate types and reviewer fields | One line: "Gate: blocking. Reviewer: owner." | Required | Required |
+| Delivery package (R-QA-05) | Skip for single-file deliverables | Multi-file or rendered deliverables | As the domain needs |
+| Build artifacts in `_meta/build/` | Intake + workflow map merged in one file; skip the DAG diagram for a linear pipeline | Keep | Keep |
+| Meta snapshot in every stage (R-RUN-04) | Read the entry meta by path | Either | Either |
+| Full validation (§17) | Walk test + V1, V5, V10 | Matrix (§17.3) | Matrix + ship checklist |
+
+- **R-PROP-01 (SHOULD)** Start at the left column. Move right only when a second person, a second deployment, or a published template actually exists. "Let the structure grow from use, not from planning." [F 3.3]
+- **R-PROP-02 (MUST)** The proportionality table never relaxes INV-01 to INV-09, or the one rule that a human reads each output before the next stage uses it.
 
 ---
 
@@ -205,6 +224,7 @@ Jake's Tier 1 teaching predates the invariants and does not use all of them, so 
 - **R-LIB-03 Generated indexes are never hand-edited (MUST).** "A file map built from frontmatter by a script cannot drift; a hand-curated one always does. If an index matters, script it and schedule the rebuild." Head each generated file with a marker such as `<!-- GENERATED by <script> from <source>. Do not edit. -->`. [A][M]
 - **R-LIB-04 (SHOULD) The structure is the documentation.** Explanations go in that folder's `CONTEXT.md`, "not in a wiki elsewhere and not in anyone's head". "A new collaborator should understand the whole pipeline by reading the CONTEXT files top to bottom, without running anything." [A][P §3.3]
 - **R-LIB-05 Method and instance live apart (SHOULD).** The blank, reusable template is a different artifact from any filled-in deployment. "When a structure proves out, extract the template before it tangles with the data." [A]
+  Extraction procedure [EXT]: (1) grep the instance for its own terms (names, units, columns); (2) replace each with a unique named `[Fill-in]` or a `{{PLACEHOLDER}}`; (3) make scripts read their values from schema or reference files instead of hardcoding them; (4) create a fresh instance from the template and run validation on it.
 - **R-LIB-06 Working sessions end in artifacts (SHOULD).** A workshop, interview, or planning call "that produces only slides or vibes has failed the structure". "Conversations are disposable. The thinking is not." [A][F 4.3]
 - **R-LIB-07 (INFO) New sessions start clean.** CLAUDE.md is read fresh and routing sends the agent to the right room, so nothing bleeds over from a previous task. [F 4.5]
 - **R-LIB-08 (INFO) Same quality for everyone.** "When the context lives in files, not in someone's head, anyone who opens the folder gets the same Claude experience." [F 4.5]
@@ -488,7 +508,7 @@ The ICM repo workspaces use an equally valid variant: `stages/01-script/`, `shar
   - Title Case is allowed for human-browsed node files when the schema declares it (R-NAME-07).
 - **R-NAME-03 (SHOULD)** Meta and system folders take an underscore prefix so they sort to the top: `_meta/`, `_system/`, `_shared/`, `_config/`, `_templates/`, `_index/`, `_archive/`. "Underscore = 'about the workspace, not of the work.'" [A]
 - **R-NAME-04 (MAY)** Ordered files inside a folder use an ordinal-only prefix (`00-tracker.md`). [A]
-- **R-NAME-05 (SHOULD)** Output artifacts are named `<topic-slug>-<artifact-type>.md` (`hello-world-script.md`). [R] (Jake writes `[topic-slug]`; this document uses `<...>` for per-run variables, see §10.1.)
+- **R-NAME-05 (SHOULD)** Output artifacts are named `<run-id>-{artifact}.md` (`hello-world-script.md`, `2026-w39-digest.md`), where `<run-id>` is the per-run slug and `{artifact}` is a fixed word chosen per stage. [R] (Jake writes `[topic-slug]`; this document uses `<...>` for per-run variables, see §10.1.)
 - **R-NAME-06 (MAY)** Typed content files prefix their type (`data-customer-list.md`). [A]
 - **R-NAME-07 (MUST)** For records and nodes, pick kebab-case slugs (machine-facing) or Title Case (where a person browses daily, as in an Obsidian vault). Pick one per workspace and write it into the schema: "drift between schema and files is the most common decay." [A]
 - **R-NAME-08 (SHOULD)** Templates are blank, named for what they produce, and live together (`_templates/pilot-brief.md`). [A]
@@ -622,7 +642,7 @@ Rules:
 
 - **R-CTR-28 CONTEXT.md is routing, not content (MUST).** It answers three questions: what is this folder, what do I load, what is the process. "No definitions. No rules. No extended examples. No voice guidelines." [R Pattern 6]
 - **R-CTR-29 (SHOULD)** "If you find yourself writing more than a one-sentence description in a CONTEXT.md, that content belongs in a separate file that the CONTEXT.md points to." [R]
-- **R-CTR-30 (MUST (validation))** Allowed content only: the elements in the table above, plus a "Source of truth" or "When to loop back" table in final and validation stages (§9.10). [R WB 05 check 6][R voice-driven]
+- **R-CTR-30 (MUST (validation))** Allowed content only: the elements in the table above, plus a "Source of truth" or "When to loop back" table in final and validation stages (§9.8). These tables MAY live in `references/` with a pointer when the contract nears 80 lines. [R WB 05 check 6][R voice-driven]
 - **R-CTR-31 (MUST)** Size per §3 (under 80 lines). Warning signs: more than 80 lines; code examples; "Why it works" sections; information duplicated from another CONTEXT.md. [R][O]
 - **R-CTR-32 (SHOULD)** It doubles as human documentation (literate programming). [P]
 
@@ -752,12 +772,14 @@ Walk-test W5 (§17.1) applies to *authoritative* copies only. These restatements
 | Hard limits restated in a Process step or an Audit row | the reference file | [A R-CTR-14] |
 | "The one rule" in CLAUDE.md, repeated in contracts | CLAUDE.md | [A] |
 | Per-run metadata snapshot in each stage's output | the entry stage's `<slug>-meta.md` | [R course-deck] |
+| Summaries in CLAUDE.md or root CONTEXT.md of facts that contain placeholders: keep them role-neutral ("the reviewer"), because routing files hold no placeholders | the stage contract | [EXT] |
 | `AGENTS.md` / `routing.md` twins | `CLAUDE.md` (generated, byte-identical) | [A system-map] |
 | Original source files kept in `source/` during a conversion | the converted markdown, after sign-off | [EXT] |
 
 ### 8.5 Audits (before writing output) [R Pattern 12]
 
 - **R-AUD-01** Creative, analytic, and build stages carry an Audit table `Check | Pass Condition` (MUST (validation)).
+- **R-AUD-01b (SHOULD)** The default audit row for creative and analytic stages is: "Claims supported: every claim follows from a named input or is labeled as a guess." This extends R-EVID-03 beyond research stages. [EXT]
 - **R-AUD-02 (MUST)** The audit runs after the process and before writing to `output/`. "If any check fails, the agent revises before saving to output/."
 - **R-AUD-03 (MUST (validation))** "Each check should be specific enough that pass/fail is unambiguous." Good: `Em-dash count | Zero em-dashes anywhere`; "Every chunk traces back to a specific source document or section"; `Word budget | Within +/-10% of {{TARGET_DURATION}} (~160 wpm)`; "Beat N's start is strictly less than Beat N+1's start". Bad: "Quality is good".
 - **R-AUD-04 (INFO)** Audits are each stage's quality floor; they stop problems spreading downstream.
@@ -770,7 +792,7 @@ Walk-test W5 (§17.1) applies to *authoritative* copies only. These restatements
 - **R-QA-02 Ship-ready definition (SHOULD).** A final stage defines "ship-ready" as a checklist, for example: all pre-flight items checked; the run exited cleanly; post-run checks pass; a human reviewer has reviewed the full artifact once and approved. "If any of those fail, do not deliver. Fix and re-render. The cost of a re-render is far smaller than the cost of shipping the wrong cut." [R render-checklist]
 - **R-QA-03 Rigor by tier (MAY).** Full checks for finals, light checks for drafts: "Skip none of these on a final-cut render. Skip them all freely on a draft." [R]
 - **R-QA-04 (SHOULD)** Check where defects cluster ("Watch the first 5 seconds and the last 10 seconds at full attention -- those frames are where rendering tends to drift"), and check at real size. [R][lecture-deck]
-- **R-QA-05 Delivery package (SHOULD).** The final stage writes the deliverable (`output/` or `output/final/`), a QA report, a delivery manifest (contents, counts, sizes), and a release note (date, runtime or size, "any caveats (open questions from research that survived)"). It names anything that is still placeholder. Earlier cuts go to `output/archive/<slug>-vN.ext`. [R][lecture-deck]
+- **R-QA-05 Delivery package (SHOULD, for multi-file or rendered deliverables).** The final stage writes the deliverable (`output/` or `output/final/`), a QA report, a delivery manifest (contents, counts, sizes), and a release note (date, runtime or size, "any caveats (open questions from research that survived)"). It names anything that is still placeholder. Earlier cuts go to `output/archive/<slug>-vN.ext`. [R][lecture-deck]
 - **R-QA-06 (SHOULD)** Distribution (sending, posting, publishing) is a human act or a declared script, outside the AI stages. [EXT]
 
 ### 8.7 Docs over outputs [R Pattern 14]
@@ -826,7 +848,7 @@ Apply this when the deliverable must persuade, teach, or hold attention (content
 
 1. Read `CLAUDE.md`, then `PROGRESS.md` if it exists (§11).
 2. Decide the entry stage. Use the default set during setup unless the human overrides it for this run. "You can always override per course." [R course-deck]
-3. Archive the previous run's outputs to `_archive/runs/<run-id>/` [EXT], or clear the output folders ("To start a fresh run, clear the output folders from the previous course." [R]).
+3. Archive the previous run's outputs, or clear the output folders ("To start a fresh run, clear the output folders from the previous course." [R]). Archive procedure [EXT]: *move* every `stages/*/output/` file and the entry `input/` to `_archive/runs/<run-id>/<NN_stage>/`, then verify the file count. Archive only if the final output is APPROVED; otherwise archive the run as `<run-id>-abandoned`. Mask or drop personal-data columns at archive time (R-SEC-06). The procedure lives in `setup/new-run.md`.
 4. Put raw inputs in the entry stage's `input/` [EXT], or take them from the conversation.
 5. The entry stage restates the task for confirmation, then collects the per-run metadata into `output/<slug>-meta.md` (R-CTR-17).
 
@@ -839,7 +861,7 @@ A per-run variable is any value that changes each run (topic slug, week, client)
 - **R-RUN-01 (MUST)** Stage N writes `stages/NN_name/output/<slug>-<artifact>.md`, and stage N+1 reads it by exact path. "No state management. No orchestration layer. Just files in predictable places." [R Pattern 2]
 - **R-RUN-02 (MUST (validation))** The handoff chain is unbroken: stage N's output location matches stage N+1's input reference. [R]
 - **R-RUN-03 (MUST)** Each stage output is a complete, readable artifact that "captures the work done so far and provides everything the next stage needs to continue." [P §3.3]
-- **R-RUN-04** The entry stage's metadata travels forward: each stage copies `<slug>-meta.md` into its own output. This is a sanctioned snapshot (§8.4). Any stage MAY be the entry point; if it is, it collects the metadata itself. [R]
+- **R-RUN-04 (MAY)** The entry stage's metadata travels forward. Jake's course pipeline copies `<slug>-meta.md` into each stage's output, as a sanctioned snapshot (§8.4). A simpler choice is for later stages to read the entry meta by path [EXT]. Any stage MAY be the entry point; if it is, it collects the metadata itself. [R]
 - **R-RUN-05 (MAY)** A stage reads more than its immediate predecessor (a validation stage reads 03 and 04), as long as Inputs declares it. Sibling stages MAY share one predecessor (a table stage and a digest stage both reading 02); the human runs them in sequence. [R][EXT for siblings]
 - **R-RUN-05b (MUST)** Handoff artifacts are plain text: "Stages communicate through markdown and JSON. No binary formats, no database connections, no proprietary serialization." [P][A] A binary that a script produces or consumes (audio, video, decks) can be passed by "Path only", but the artifact the human reviews and the next stage reasons over must be text. [I]
 - **R-RUN-06 (SHOULD)** Every output goes to a named file in a named folder, never only into chat. ("Save the result as summary.md in this folder.") [F 4.2]
@@ -867,7 +889,9 @@ A per-run variable is any value that changes each run (topic slug, week, client)
 |---|---|
 | PENDING | No artifact in `output/` |
 | DRAFT | An artifact exists, and its header is `status: draft` (or `revised`) |
-| APPROVED | Header `status: approved`, with `approved_by:` and `approved_on:` written by the human, or by the agent at the human's explicit instruction |
+| AUDITED | Header `status: audited`: an auto-advance stage whose audit passed (an audit failure leaves it DRAFT) |
+| APPROVED | Header `status: approved`, with `approved_by:` and `approved_on:` written by the human, or by the agent at the human's explicit instruction. In a one-person workspace a bare `status: approved` is enough (§1.5). |
+| STALE | Header `status: stale`: an upstream input changed after this output was written or approved |
 
 ```
 Pipeline Status: weekly-ops-digest   (run 2026-w39)
@@ -877,7 +901,11 @@ Pipeline Status: weekly-ops-digest   (run 2026-w39)
  (2026-w39-intake.md) (2026-w39-issues.md) (empty)             (empty)
 ```
 
-The next stage MUST NOT start while its predecessor is DRAFT, unless the predecessor's gate type is auto-advance (§9.6). [EXT, implementing INV-06]
+The next stage MUST NOT start while its predecessor is DRAFT or STALE. An auto-advance predecessor must be AUDITED (§9.6). [EXT, implementing INV-06]
+
+- **R-STATE-04 (MUST)** Only a stage's primary artifact carries a gate `status`, and it alone sets the stage's state. Supporting files (meta, script tables, logs) carry none, or `status: generated`. [EXT]
+- **R-STATE-05 (MUST)** Never hand-edit a generated file to approve it. The generator takes a `--status` argument, or status lives in a sidecar `<artifact>.status` file. Pick one per workspace and state it in CLAUDE.md. [EXT, reconciling R-LIB-03]
+- **R-STATE-06 (SHOULD)** Record checkpoint decisions in the primary artifact's header as `checkpoint-N: <decision>` lines, so the steering survives the session (INV-06, R-LIB-06). [EXT]
 
 ### 9.6 Human review and gate types
 
@@ -901,7 +929,7 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
 ### 9.7 Re-running and propagation
 
 - **R-RUN-13 (SHOULD)** Re-run only the stage that needs it. "If the research output is fine but the script needs rework, the practitioner re-runs stage 2 without touching stage 1." [P §6.1]
-- **R-RUN-14 (MUST)** A stage's Inputs table declares its dependencies. When any of those files change, the stage's output may be stale: re-run it and everything downstream. "Changed script? Regenerate spec. Changed spec? Rebuild composition." [P][O]
+- **R-RUN-14 (MUST)** A stage's Inputs table declares its dependencies. When any of those files change, the stage's output may be stale: re-run it and everything downstream. Re-running stage N sets every downstream gated output to `status: stale` until it is re-run and re-approved (R-STATE-01 extension [EXT]). "Changed script? Regenerate spec. Changed spec? Rebuild composition." [P][O]
 - **R-RUN-15 (MUST)** Flow is one-way: "Don't reverse-engineer earlier stages from later ones." [O]
 - **R-RUN-16 Fix upstream, do not work around it downstream (MUST).** "If two beats start with similar openers, change one. Edit the script; do not work around it in Stage 03." [R beat-markers] This is the edit-source principle applied inside a single run.
 - **R-RUN-17 (INFO)** Error recovery is a manual re-run of the failed stage. [P]
@@ -917,13 +945,17 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
 | Audio sounds wrong | Stage 03 (regenerate the voice-over) |
 | Script reads wrong | Stage 02 (rewrite, then 03, then 04) |
 | Claim is unsupported | Stage 01 (cite or remove) |
+| Value agrees with its inputs but is implausible [EXT default row] | Entry stage: add a plausibility rule to its schema or reference, then re-run forward |
+
+If no row matches, walk R-EDIT-04 upstream, fix the earliest wrong source, re-run forward, and then add the row. A loop-back table lists only the symptoms its designer foresaw. [EXT]
 
 ### 9.9 Prior-run data vs pattern learning [EXT, resolving R-QUAL-01 vs recurring-trend needs]
 
 - **R-RUN-20** A stage MAY read a previous run's output **as data** (for example, last week's issue counts for a "what changed" section). The conditions:
   - it is declared in Inputs as `Prior run (data only)`, with the exact archived path and the section;
   - it is read-only;
-  - it is never used to learn style or structure (R-QUAL-01 still applies).
+  - it is never used to learn style or structure (R-QUAL-01 still applies);
+  - on the first run it does not exist yet, so tag the row `(optional; skip if absent)`. V1 honors that tag. A pre-ICM prior value (a report done by hand) goes into the entry meta as a human-supplied value, with a note naming its source. [EXT]
 - **R-RUN-21 (MUST)** Edges to earlier runs (run N-1 to run N) do not count against the one-way DAG rule, which governs folders within a run. Prior runs are read from `_archive/runs/<run-id>/`, never from a live stage's `output/`.
 
 ### 9.10 The edit-source principle (improving the system over time) [P §6.3]
@@ -936,6 +968,8 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
   - a new constraint.
 
   The paper proposes that the *system* surface this when the same kind of edit happens in the same stage "three runs in a row". The threshold is a proposal; the principle is stated. [P §6.3]
+
+  To make recurrence visible, log every hand edit to a gated output in PROGRESS.md under **Output edit log** (`run | stage | edit | source fix`). Two edits of the same kind with an obvious cause justify a source fix; three always do. [EXT]
 - **R-EDIT-04 (SHOULD)** When output is wrong, check the three possible sources: (a) the reference material is underspecified; (b) the stage contract stresses the wrong quality; (c) the previous stage's output framed things wrongly. [P §6.3]
 - **R-EDIT-05 (SHOULD)** "Every constraint you give is a mistake Claude will not make." Turn each recurring annoyance into a written constraint. [F 1.3]
 - **R-EDIT-06 (INFO)** The trajectory: "If workspaces improve their own source files over time... they become systems that get better with use." [P §6.3]
@@ -959,9 +993,9 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
 | `{{SCREAMING_SNAKE}}` | Setup placeholder | the `setup` trigger, once | brand and voice files, reference files, shared files, stage contract Inputs values, Human check lines | V3: none left after setup |
 | `{{?NAME}}` ... `{{/NAME}}` | Conditional section | `setup`, removed when not needed | around whole sections only; may appear in root CONTEXT.md outside tables | V4 |
 | `<kebab-name>` | Per-run variable | the agent, each run, from the meta file | Inputs and Outputs paths, filenames | V3b: every `<x>` is defined in the entry stage |
-| `[Description]` | Author fill-in in this document's templates | the builder, while authoring | templates only | V3b: none left at ship |
+| `[Description]` | Author fill-in in this document's templates. Grammar: `[` + a capital letter + text + `]`, not followed by `(`. It excludes `[Checkpoint N]`, the checkboxes `[ ]` and `[x]`, and link text. Each fill-in is unique within a template (`[Column 1 name]`, not six `[column]`). | the builder while authoring, or a scaffolding skill from a named spec (R-PH-06) | templates only | V3b: none left at ship |
 
-- **R-PH-01 (MUST)** Setup placeholders are literal strings replaced by string substitution. Names are descriptive (`{{BRAND_NAME}}`, not `{{BN}}`). Related ones share a prefix (`{{PRIMARY_COLOR}}`, `{{SECONDARY_COLOR}}`). Each placeholder is spelled out in full; ranges such as `_1..3` are not allowed. [R][EXT]
+- **R-PH-01 (MUST)** Setup placeholders are literal strings replaced by string substitution. Names are descriptive (`{{BRAND_NAME}}`, not `{{BN}}`). Related ones share a prefix (`{{PRIMARY_COLOR}}`, `{{SECONDARY_COLOR}}`). Each placeholder is spelled out in full; ranges such as `_1..3` are not allowed. A *list placeholder* (`{{VOICE_HARD_CONSTRAINTS}}`) MAY stand alone on a line and expand to any number of list items. [R][EXT]
 - **R-PH-02 (MUST NOT; source: "should NOT", held strict because setup would break)** Setup placeholders do not appear in any `CLAUDE.md`, in top-level CONTEXT.md routing tables, or in `questionnaire.md` itself ("the questions are the source, not the target"). [R]
 - **R-PH-03 What becomes a placeholder (MUST).** "If it varies from one user to another, it is a placeholder. If it is part of the framework's structure, it is hardcoded." Always hardcoded: the file structure, process steps, section headings, the contract pattern, audit checks, checkpoint tables, recipes. [R script-to-animation-summary]
 - **R-PH-04 (MUST NOT)** Per-run template files (for example `shared/course-meta.md`) do not contain placeholders: "this is per-course data, not system config." [R]
@@ -985,14 +1019,16 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
 
 ```markdown
 ### Q1: [Question text a non-technical person understands]
-- Placeholder: `{{PLACEHOLDER_NAME}}`
-- Files: `path/to/file1.md`, `path/to/file2.md`
+- `{{PLACEHOLDER_NAME}}` → `path/to/file1.md`, `path/to/file2.md`   (one line per placeholder)
 - Type: free text | selection | yes/no | structured
 - Default: [value]        (or Example: ... / Options: A, B, C)
 - Derived: `{{OTHER_FIELD}}` (filled from this answer; optional)
 - Note: [optional; follow-up for vague answers]
+- Files: `stages/0N-name/`, `CLAUDE.md` (rows), `[file with {{?X}} block]`   (yes/no questions: every file affected)
 - If NO: Remove `stages/0N-name/` entirely   (yes/no questions only)
 ```
+
+Record the answers in `_meta/setup-answers.md`, so re-setup, audits, and a second instance can reuse them without re-asking (R-Q-06). [EXT]
 
 - **R-Q-13 (SHOULD)** [A]'s minimal five-question factory, whose answers are written into `_shared/` files:
   1. Who it is for, and what a finished deliverable looks like → `definition-of-done.md`.
@@ -1008,10 +1044,10 @@ Declare the gate type in each contract's Human check (`Gate: blocking. Reviewer:
 3. Collect the answers.
 4. For each question, replace every instance of its placeholders in the files it lists.
 5. Fill the derived fields.
-6. Apply the yes/no conditionals: remove stage folders or `{{?SECTION}}` blocks.
+6. Apply the yes/no conditionals. If the answer is YES, delete only the `{{?X}}` and `{{/X}}` marker lines. If it is NO, delete the markers and everything between them, plus any stage folders and routing rows the question names.
 7. If voice rules were derived, show the Hard Constraints, Sentence Rules, and Pacing for edits (pass 2) before finalizing.
 8. Check which tools the answers require, and point the user to the setup guides.
-9. Scan the entire workspace for remaining `{{`. If any remain, flag them and ask for the missing information.
+9. Scan every file except `setup/questionnaire.md` for the pattern `\{\{[?/]?[A-Z0-9_]+\}\}`. If any remain, flag them and ask for the missing information. Prose that talks about placeholders must not use braces, or it trips this scan.
 10. "Onboarding is complete only when zero placeholders remain."
 11. Tell the user what was configured and where to start. Record it in `PROGRESS.md`.
 
@@ -1266,14 +1302,14 @@ Then:
 
 **Step 6. Validate** with the matrix in §17.3. Fix the structure, then re-run the failed checks.
 
-**Step 7. Run it once end to end (MUST).** [R] If real data is not available, a synthetic run is acceptable. Record it in PROGRESS.md, and run it in a copy (the instance) so the template stays clean. [EXT]
+**Step 7. Run it once end to end (MUST).** [R] If real data is not available, a synthetic run is acceptable. Synthetic inputs MUST copy the real export's headers and value formats (dates, units, encodings), and include at least one bad row. Record the run in PROGRESS.md, and run it in a copy (the instance) so the template stays clean. [EXT]
 
 **Step 8.** Write `PROGRESS.md`. Tell the user how to start a run and how to run `setup`.
 
 ### 15.3 Restructure an existing folder (Restructure mode) [A]
 
-1. **Inventory before touching.** List the tree. For each area, note what it is, when it was last touched, and what refers to it. Never delete or move anything in this pass. [A]
-2. **Find the hidden form.** Ask the owner, or infer and confirm: what is the repeating unit here? Where does work enter and leave? "The mess usually contains a real pipeline, library, or map that grew without a skeleton — extract it, don't replace it. Interview the folder the way you'd interview the person." [A]
+1. **Inventory before touching.** List the tree. For each area, note what it is, when it was last touched, and what refers to it. Never delete or move anything in this pass. [A] Write the inventory to `_meta/build/inventory.md` [EXT]. Treat the backup snapshot as subject to R-SEC-06.
+2. **Find the hidden form.** Run D4 to D6 of §1.2 on the folder's contents. Tier 1 Rooms is a valid target: a mixed team drive is often rooms, not a form [EXT]. Ask the owner, or infer and confirm: what is the repeating unit here? Where does work enter and leave? "The mess usually contains a real pipeline, library, or map that grew without a skeleton — extract it, don't replace it. Interview the folder the way you'd interview the person." [A]
 3. **Classify every file** into one role [A]:
    - **Catalog**: identity or routing. It becomes or feeds `CLAUDE.md` and the index files.
    - **Contract**: describes how a step works. It becomes a `CONTEXT.md`.
@@ -1299,12 +1335,18 @@ Then:
    - Verify *text* parity (the headings and numbered steps are all present). Byte hashes cannot match across formats.
    - Keep the originals in `source/` until the owner signs off, then archive them.
    - Flag scanned or image-only files for human transcription; do not guess their content.
-8. **Finish like a build.** Where a factory exists, run §15.2 steps 5 to 7: the questionnaire, the validation matrix, and one end-to-end run.
-9. **Validate with the walk test** (§17.1), including W6: does every reference that existed before the move still resolve?
+8. **Finish like a build.** Where a factory exists, run §15.2 steps 5 to 7: the questionnaire, if §1.5 calls for one; the validation matrix; and one end-to-end run. For a Tier 1 result, do one routed task instead.
+
+**Restructure details [EXT]** (apply within steps 3 to 6):
+- **Mixed-role files.** Product files often hide standing rules (meeting notes that state a policy). Extract each rule to its factory home, cite the source file, and archive or keep the original as product.
+- **Session files.** Todos and status notes become `PROGRESS.md` entries. Their originals go to `_archive/`.
+- **Rewrite + archive.** A checklist that describes a process becomes a `CONTEXT.md`. The original is archived, and the migration map's action column records "rewrite + archive".
+- **Pointers.** In-tree referrers are updated in the same change. Where a markdown file is moved, leave an R-CANON-03 pointer. A non-markdown file with an external referrer is *held* in place, never stubbed, and its folder gets a 3-line `CONTEXT.md`: purpose, who writes it, do not move.
+9. **Validate with the walk test** (§17.1), including W6: does every referrer still reach its target? In-tree referrers were updated; external ones were held.
 
 ### 15.4 Build a skill [I from §14 and Jake's skills; EXT procedure]
 
-1. Run decision D2 (§1.2). The task repeats and fits one prompt plus references and scripts, with no human review between steps. If it needs reviewed stages, build a workspace instead.
+1. Run decision D2 (§1.2). A skill MAY pause for in-session checkpoints. If the work needs saved artifacts that a human approves between sessions or runs, build a workspace instead (the skill can scaffold that workspace).
 2. Write the trigger list (phrases a user would actually say), the not-for list, and the modes.
 3. Draft SKILL.md from §20.12. Keep the procedure numbered and the rules short. Push depth into `references/`, shapes into `assets/templates/`, and mechanics into `scripts/`.
 4. Write the file index, saying when each reference is read.
@@ -1522,6 +1564,7 @@ A relational or columnar store MAY sit underneath for data it is genuinely good 
 |---|---|---|---|
 | SOPs / runbooks | one procedure at a time | Record library (one SOP per record, from an SOP template) | Add a Pipeline for "write or revise an SOP" if that recurs. SOP authoring rule: "Anything you have explained out loud more than twice" becomes an SOP; "If a step can fail, put the check for it right under that step." [X RyMac] |
 | Policies / FAQs | answers to questions | Knowledge bundle | Layer A: always-load principles; B: by topic; C: source documents (evidence). |
+| A team drive mixing several kinds of work | which kind of work am I doing | Tier 1 Rooms | Grow a pipeline inside a room only when a sequence repeats (§5.6). |
 | Ticket or case histories | patterns over time, single cases | Record library (cases) + Pipeline (periodic digest) | Prior runs are data (§9.9). |
 | A team's processes and handoffs | who does what, with which data | Context map | |
 | A codebase or docs vault to be changed | what X is, what a change hits | System map | |
@@ -1549,12 +1592,12 @@ Walk the workspace cold, as an agent with no memory.
 | # | Check | Pass condition |
 |---|---|---|
 | W1 | Open the root. Can you answer "where am I" and "where do I go for the current task"? | Within the entry file plus at most two more reads |
-| W2 | Pick any stage or node. Does its contract name exact input paths, the job, the output, and the human check? | All four present |
+| W2 | Pick any stage or node. Does its contract name exact input paths, the job, the output, and the human check? Do the scoped sections in Inputs cover every artifact that the Process and references ask for? | All present; scopes cover needs |
 | W3 | Can you state pipeline status purely by scanning `output/` folders (or node frontmatter)? | Yes |
 | W3b | Can you tell, from files alone, which gate was last passed (APPROVED vs DRAFT)? [EXT] | Yes |
 | W4 | Is any routing file carrying content payload? | No (move it to a shelf, leave a pointer) |
 | W5 | Is any fact stored authoritatively in two places? (The §8.4 sanctioned summaries are exempt.) | No |
-| W6 | After a restructure, does every reference that existed before still resolve? | Yes |
+| W6 | After a restructure, does every referrer still reach its target (in-tree referrers updated, external ones held)? | Yes |
 | W7 | Token check: entry file + one contract + its inputs | About 2k to 8k tokens (under is fine) |
 | W8 | System map only: can a cold agent answer "what is X" and "what else moves if I change X" from `map/CLAUDE.md` plus one card? | Yes |
 | W9 | Is every folder reachable from the entry file's routing (no unrouted folders, no dead routes)? [EXT, adopting X 4R] | Yes |
@@ -1566,7 +1609,7 @@ Walk the workspace cold, as an agent with no memory.
 | # | Check | Pass condition |
 |---|---|---|
 | V1 | Cross-reference integrity | Every path in every Inputs table resolves (resolving `<variables>` against the current run, using R-CTR-01 path bases) |
-| V2 | No circular dependencies | The within-run reference graph is a DAG |
+| V2 | No circular dependencies | The within-run reference graph is a DAG. This includes relative paths inside L3 files (no shared file points into a stage; no `<variables>` in L3 bodies) |
 | V3 | Placeholder coverage | Every `{{X}}` has a question; every question maps to a file containing its placeholder; after setup, none remain |
 | V3b | Fill-in hygiene [EXT] | No `[Description]` author fill-ins remain; every `<variable>` is defined in the entry stage's meta |
 | V4 | Conditional validity | Every `{{?X}}...{{/X}}` wraps a complete section |
@@ -1580,7 +1623,7 @@ Walk the workspace cold, as an agent with no memory.
 | V12 | Tool prerequisites | Every system-level tool has a setup guide with install and verify steps; the questionnaire asks about optional tools |
 | V13 | Quality scan | No unexplained jargon; clean markdown; no em dashes if the house style bans them |
 | V14 | Safety [EXT] | `.env` is gitignored; no keys in files; personal-data inputs and outputs are gitignored; client isolation holds |
-| V15 | Gates [EXT] | Every contract declares a gate type and a reviewer; a blocking gate follows every creative or analytic stage |
+| V15 | Gates [EXT] | Every contract declares a gate type and a reviewer; a blocking gate follows every creative or analytic stage (final approval counts as blocking) |
 
 ### 17.3 Which checks apply (by tier and form) [EXT]
 
@@ -1695,12 +1738,13 @@ Walk the workspace cold, as an agent with no memory.
 ## 19. Quick-Reference Card (for an agent mid-task)
 
 1. **Classify the request** (§1.1): build, restructure, skill, run, or setup.
-2. **Does it need a workspace?** One-off → chat. Fits one prompt → a skill. Not yet repeating → wait. Repeating with several parts → a workspace.
-3. **Which tier or form?** Ongoing kinds of work → Rooms. A reviewed sequence that repeats → Pipeline. A record, knowledge, an organization, or a codebase → the matching form.
-4. **Root CLAUDE.md**: about 30 to 60 lines, routes only. The routing table is Task | Go to | Read | Skills.
-5. **Rooms**: start with 2 to 3, split by mental mode. CONTEXT.md under a page, 80% about the work, kept up to date.
-6. **Stages**: cut where the human pauses. Surface judgment calls as editable files before the expensive work. Classify each stage as creative, analytic, build, or linear.
-7. **Each stage**: `CONTEXT.md` containing:
+2. **Proportionality** (§1.5): one owner means minimal ceremony. Add setup, templates, and approval metadata only when they pay.
+3. **Does it need a workspace?** One-off → chat. Fits one prompt → a skill. Not yet repeating → wait. Repeating with several parts → a workspace.
+4. **Which tier or form?** Ongoing kinds of work → Rooms. A reviewed sequence that repeats → Pipeline. A record, knowledge, an organization, or a codebase → the matching form.
+5. **Root CLAUDE.md**: about 30 to 60 lines, routes only. The routing table is Task | Go to | Read | Skills.
+6. **Rooms**: start with 2 to 3, split by mental mode. CONTEXT.md under a page, 80% about the work, kept up to date.
+7. **Stages**: cut where the human pauses. Surface judgment calls as editable files before the expensive work. Classify each stage as creative, analytic, build, or linear.
+8. **Each stage**: `CONTEXT.md` containing:
    - Inputs, with exact paths and sections
    - Do NOT load
    - Process, as numbered concrete steps
@@ -1710,16 +1754,16 @@ Walk the workspace cold, as an agent with no memory.
    - Human check: one act, the reviewer, and the gate type
 
    Plus `references/` and `output/`, and `input/` for the entry stage.
-8. **Factory** (`_shared/`, `references/`, `skills/`) sits apart from **product** (`input/`, `output/`).
-9. **Budget**: 2k to 8k tokens per stage. Over budget → split the stage, tighten the inputs, or push detail down into references.
-10. **One home per fact.** References point one way. Indexes and numbers are generated by script.
-11. **Limits** live in §3.
-12. **Setup**: flat list, all questions at once, system-level only, defaults, examples rather than descriptions, no `{{` left afterwards.
-13. **Run**: archive the old run, drop inputs, restate the task, collect the metadata, run stage by stage, PENDING → DRAFT → APPROVED, and nothing moves on until a human has read the last output.
-14. **Problems**: fix upstream and re-run forward; use the loop-back table; turn recurring edits into source changes.
-15. **Sessions**: read CLAUDE.md and PROGRESS.md, verify against the files, work, update PROGRESS.md.
-16. **Prompts**: Identity, Task, Context, Constraints, Output Format. One ask per prompt. Correct in place.
-17. **Validate**: walk test, matrix checks, one end-to-end run.
+9. **Factory** (`_shared/`, `references/`, `skills/`) sits apart from **product** (`input/`, `output/`).
+10. **Budget**: 2k to 8k tokens per stage. Over budget → split the stage, tighten the inputs, or push detail down into references.
+11. **One home per fact.** References point one way. Indexes and numbers are generated by script.
+12. **Limits** live in §3.
+13. **Setup**: flat list, all questions at once, system-level only, defaults, examples rather than descriptions, no `{{` left afterwards.
+14. **Run**: archive the old run, drop the inputs, restate the task, collect the metadata, then run stage by stage. States go PENDING → DRAFT (or AUDITED) → APPROVED. A re-run upstream marks everything downstream STALE. Nothing moves on until a human has read the last output.
+15. **Problems**: fix upstream and re-run forward; use the loop-back table; turn recurring edits into source changes.
+16. **Sessions**: read CLAUDE.md and PROGRESS.md, verify against the files, work, update PROGRESS.md.
+17. **Prompts**: Identity, Task, Context, Constraints, Output Format. One ask per prompt. Correct in place.
+18. **Validate**: walk test, matrix checks, one end-to-end run.
 
 ---
 
@@ -1828,7 +1872,7 @@ Built on ICM: folders carry sequencing, hierarchy carries context, files carry s
 | starting a new run | `setup/new-run.md`, then `stages/01_[name]/CONTEXT.md` | the human approves 01's output |
 | [NN] output approved | the next numbered stage | that stage's Human check |
 | asked for `status` | scan `stages/*/output/` headers | report PENDING / DRAFT / APPROVED |
-| asked for `setup` | `setup/questionnaire.md` | zero `{{` remain |
+| asked for `setup` | `setup/questionnaire.md` | zero placeholders remain |
 
 ## Naming
 Outputs: `<run-id>-<artifact>.md`. Run IDs: [format, e.g. 2026-w39].
@@ -1904,8 +1948,12 @@ Do NOT load: [other stages' references, prior runs, the whole _shared folder, un
 
 ## Human check
 
-Reviewer: [role]. Gate: [blocking | auto-advance | final approval].
+Reviewer: [Role]. Gate: blocking.
 [One concrete act: read it aloud / verify the numbers against X / confirm the order survived.] Edit the output in place, then set `status: approved`; the next stage reads whatever is here.
+
+<!-- Variants:
+     Final stage:   "Reviewer: [Role]. Gate: final approval. [Act]. Set status: approved; this is the deliverable."
+     Linear stage:  "Gate: auto-advance. No act here; the human reads this at stage [NN]'s gate." -->
 ```
 
 ### 20.7 Setup questionnaire (pairs with §20.8; passes V3) [R][A]
@@ -1915,48 +1963,46 @@ Reviewer: [role]. Gate: [blocking | auto-advance | final approval].
 
 <!-- Agent: read this when the user types "setup". Ask ALL questions in one pass.
      Replace placeholders in the listed files. Run pass 2 for derived voice rules.
-     Then scan the workspace for "{{". Rules: flat list, all at once, system-level
+     Then scan for remaining placeholders (every file except this one). Rules: flat list, all at once, system-level
      only, derive don't ask, sensible defaults, ask once never again, examples over
      descriptions. -->
 
 ### Q1: What is the brand or team name, and who is the audience?
-- Placeholder: `{{BRAND_NAME}}`, `{{TARGET_AUDIENCE}}`
-- Files: `_shared/voice.md`, `_shared/definition-of-done.md`
+- `{{BRAND_NAME}}` → `_shared/voice.md`
+- `{{TARGET_AUDIENCE}}` → `_shared/voice.md`, `_shared/definition-of-done.md`
 - Type: free text
 - Example: "Acme Ops; regional operations leadership"
 
 ### Q2: What does a finished deliverable look like?
-- Placeholder: `{{DEFINITION_OF_DONE}}`
-- Files: `_shared/definition-of-done.md`
+- `{{DEFINITION_OF_DONE}}` → `_shared/definition-of-done.md`
 - Type: free text
 - Example: "One page, five sections, ready to forward without edits."
 
 ### Q3: Paste two short examples of past work that sound right, and one that sounds wrong.
-- Placeholder: `{{VOICE_RIGHT_EXAMPLE_1}}`, `{{VOICE_RIGHT_EXAMPLE_2}}`, `{{VOICE_WRONG_EXAMPLE_1}}`
-- Files: `_shared/voice.md`
+- `{{VOICE_RIGHT_EXAMPLE_1}}` → `_shared/voice.md`
+- `{{VOICE_RIGHT_EXAMPLE_2}}` → `_shared/voice.md`
+- `{{VOICE_WRONG_EXAMPLE_1}}` → `_shared/voice.md`
 - Type: structured
-- Derived: `{{VOICE_HARD_CONSTRAINT_1}}`, `{{VOICE_HARD_CONSTRAINT_2}}`, `{{VOICE_PACING}}` (show these back for review in pass 2)
+- Derived: `{{VOICE_HARD_CONSTRAINTS}}` (a list placeholder: one list item per constraint), `{{VOICE_PACING}}` → `_shared/voice.md` (show these back for review in pass 2)
 
 ### Q4: What hard constraints never bend (length, format, brand rules, compliance)?
-- Placeholder: `{{HARD_RULES}}`
-- Files: `_shared/rules.md`
+- `{{HARD_RULES}}` → `_shared/rules.md`
 - Type: free text
 - Default: "None beyond the definition of done."
 
 ### Q5: What do you always check before anything ships?
-- Placeholder: `{{FINAL_HUMAN_CHECK}}`
-- Files: `stages/03_[name]/CONTEXT.md` (Human check line)
+- `{{FINAL_HUMAN_CHECK}}` → `stages/03_[name]/CONTEXT.md` (Human check line)
 - Type: free text
 - Example: "Verify every number against the source export."
 
 ### Q6: What already exists that runs should reuse (templates, examples, data sources)?
-- Placeholder: `{{REUSABLE_ASSETS}}`
-- Files: `_shared/assets.md`
+- `{{REUSABLE_ASSETS}}` → `_shared/assets.md`
 - Type: free text
 - Default: "None yet."
 
-### Q7: Do you need the optional [name] stage?
+### Q7: Do you need the optional [Optional stage name] stage?
 - Type: yes/no
+- Files: `stages/[NN]_[name]/`, `CLAUDE.md`, `CONTEXT.md`
 - If NO: Remove `stages/[NN]_[name]/` entirely, and its rows in CLAUDE.md and CONTEXT.md.
 
 ---
@@ -1975,11 +2021,10 @@ How {{BRAND_NAME}} writes. Load the sections named in each stage's Inputs.
 
 ## Hard Constraints
 These are errors. If the output contains any of these, rewrite.
-1. {{VOICE_HARD_CONSTRAINT_1}}
-2. {{VOICE_HARD_CONSTRAINT_2}}
-3. Filler transitions ("Now let's talk about..."). Just start the next thought.   <!-- default; keep or delete -->
-4. Recap summaries at the end of sections.                                         <!-- default; keep or delete -->
-5. Hype language ("game changing", "revolutionary").                               <!-- default; keep or delete -->
+{{VOICE_HARD_CONSTRAINTS}}
+- Filler transitions ("Now let's talk about..."). Just start the next thought.   <!-- default; keep or delete -->
+- Recap summaries at the end of sections.                                         <!-- default; keep or delete -->
+- Hype language ("game changing", "revolutionary").                               <!-- default; keep or delete -->
 
 ## Sentence Rules
 | Wrong | Right |
@@ -2485,6 +2530,22 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | EXT-20 | "Fits one prompt" threshold in D2 | §1.2 | No threshold was given |
 | EXT-21 | One-line `CLAUDE.md` pointer for record libraries | §16.3 | Claude Code auto-loads only CLAUDE.md |
 | EXT-22 | Deliverable line in root CONTEXT.md; distribution happens outside the AI stages | §20.5, R-QA-06 | Final delivery was undefined |
+| EXT-23 | AUDITED and STALE states; downstream outputs go stale after an upstream re-run | §9.5, R-RUN-14 | Approvals survived loop-backs; auto-advance had no passed state |
+| EXT-24 | Only the primary artifact carries gate status; generated files are approved through the generator or a sidecar | R-STATE-04, R-STATE-05 | Approving meant hand-editing a "do not edit" file |
+| EXT-25 | Checkpoint decisions recorded in the output header | R-STATE-06 | Steering was lost with the session |
+| EXT-26 | Output edit log in PROGRESS.md | R-EDIT-03 | "Three runs in a row" could not be detected |
+| EXT-27 | Archive procedure (move, mirror stages, approved-only or `-abandoned`, mask personal data) | §9.1 | The archive step was too vague to implement |
+| EXT-28 | Optional prior-run input tag; seeding values from pre-ICM history | R-RUN-20 | First runs failed V1 |
+| EXT-29 | Placeholder scan pattern, with the questionnaire excluded | §10.3 step 9 | The literal `{{` scan failed on correct workspaces |
+| EXT-30 | One line per placeholder; `Files:` on yes/no questions; YES/NO marker handling; list placeholders; setup answers recorded | §10.2, §10.3, R-PH-01 | Scripted setup missed conditionals and mis-mapped files |
+| EXT-31 | Fill-in grammar, unique fill-ins | §10.1 | `[Description]` collided with checkpoints and checkboxes |
+| EXT-32 | Proportionality table | §1.5 | Ceremony outran value in single-owner workspaces |
+| EXT-33 | Restructure details: mixed-role files, session files, rewrite + archive, pointer and hold rules; Tier 1 as a target | §15.3 | Real drives hold files no role fit |
+| EXT-34 | Default loop-back row for implausible values; the no-match procedure | §9.8 | Loop-back tables list only foreseen symptoms |
+| EXT-35 | "Claims supported" default audit row | R-AUD-01b | An invented qualitative claim passed a numbers-only audit |
+| EXT-36 | Realistic synthetic data with a planted bad row | §15.2 step 7 | Synthetic data was shaped to fit the code |
+| EXT-37 | Template-extraction procedure | R-LIB-05 | "Extract the template" had no steps |
+| EXT-38 | Skill vs workspace threshold: in-session checkpoints are allowed in skills | §1.2 D2, §15.4 | The threshold contradicted R-SKW-04 |
 
 ---
 
@@ -2504,6 +2565,8 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-SCOPE-08 | SHOULD | §1.3 | Much "AI isn't good enough" frustration "is actually a conte | [O] |
 | R-SCOPE-09 | SHOULD | §1.3 | Decide where AI fits at all. Jake's 60/30/10 framing: about  | [SS snippet; a different [X] |
 | R-SCOPE-10 | SHOULD | §1.3 | If the person "make different decisions based on what  see", | [PB 2.3] |
+| R-PROP-01 | SHOULD | §1.5 | Start at the left column. Move right only when a second pers | [F 3.3] |
+| R-PROP-02 | MUST | §1.5 | The proportionality table never relaxes INV-01 to INV-09, or |  |
 | INV-01 | MUST | §2 | One folder, one job |  |
 | INV-02 | MUST | §2 | A small, stable entry file |  |
 | INV-03 | MUST | §2 | Numbering encodes order |  |
@@ -2553,7 +2616,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-NAME-02 | MUST (validation) | §6.3 | Folders and files use lowercase kebab-case with no spaces.   | [A] [EXT, codifying observed practice] [R] |
 | R-NAME-03 | SHOULD | §6.3 | Meta and system folders take an underscore prefix so they so | [A] |
 | R-NAME-04 | MAY | §6.3 | Ordered files inside a folder use an ordinal-only prefix (`0 | [A] |
-| R-NAME-05 | SHOULD | §6.3 | Output artifacts are named `<topic-slug>-<artifact-type>.md` | [R] |
+| R-NAME-05 | SHOULD | §6.3 | Output artifacts are named `<run-id>-{artifact}.md` (`hello- | [R] |
 | R-NAME-06 | MAY | §6.3 | Typed content files prefix their type (`data-customer-list.m | [A] |
 | R-NAME-07 | MUST | §6.3 | For records and nodes, pick kebab-case slugs (machine-facing | [A] |
 | R-NAME-08 | SHOULD | §6.3 | Templates are blank, named for what they produce, and live t | [A] |
@@ -2656,6 +2719,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-CHK-04 | SHOULD | §8.3 | Good checkpoint patterns: |  |
 | R-CHK-05 | INFO | §8.3 | A checkpoint is the implemented form of the paper's proposed | [I] [P §6.2] |
 | R-AUD-01 | MUST (validation) | §8.5 | Creative, analytic, and build stages carry an Audit table `C |  |
+| R-AUD-01b | SHOULD | §8.5 | The default audit row for creative and analytic stages is: " | [EXT] |
 | R-AUD-02 | MUST | §8.5 | The audit runs after the process and before writing to `outp |  |
 | R-AUD-03 | MUST (validation) | §8.5 | "Each check should be specific enough that pass/fail is unam |  |
 | R-AUD-04 | INFO | §8.5 | Audits are each stage's quality floor; they stop problems sp |  |
@@ -2665,7 +2729,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-QA-02 | SHOULD | §8.6 | Ship-ready definition | [R render-checklist] |
 | R-QA-03 | MAY | §8.6 | Rigor by tier | [R] |
 | R-QA-04 | SHOULD | §8.6 | Check where defects cluster ("Watch the first 5 seconds and  | [R] |
-| R-QA-05 | SHOULD | §8.6 | Delivery package | [R] |
+| R-QA-05 | SHOULD | §8.6 | Delivery package (, for multi-file or rendered deliverables | [R] |
 | R-QA-06 | SHOULD | §8.6 | Distribution (sending, posting, publishing) is a human act o | [EXT] |
 | R-QUAL-01 | MUST NOT | §8.7 | ; source says "should not", build contracts say "Do not" |  |
 | R-QUAL-02 | MAY | §8.7 | Curated exemplars are allowed | [I reconciling R and F] |
@@ -2691,7 +2755,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-RUN-01 | MUST | §9.3 | Stage N writes `stages/NN_name/output/<slug>-<artifact>.md`, | [R Pattern 2] |
 | R-RUN-02 | MUST (validation) | §9.3 | The handoff chain is unbroken: stage N's output location mat | [R] |
 | R-RUN-03 | MUST | §9.3 | Each stage output is a complete, readable artifact that "cap | [P §3.3] |
-| R-RUN-04 | MAY | §9.3 | The entry stage's metadata travels forward: each stage copie | [R] |
+| R-RUN-04 | MAY | §9.3 | The entry stage's metadata travels forward. Jake's course pi | [EXT] [R] |
 | R-RUN-05 | MAY | §9.3 | A stage reads more than its immediate predecessor (a validat | [EXT for siblings] [R] |
 | R-RUN-05b | MUST | §9.3 | Handoff artifacts are plain text: "Stages communicate throug | [A] [I] [P] |
 | R-RUN-06 | SHOULD | §9.3 | Every output goes to a named file in a named folder, never o | [F 4.2] |
@@ -2704,6 +2768,9 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-STATE-01 | MUST | §9.5 | The `status` trigger scans `stages/*/output/`. A stage is CO | [R] |
 | R-STATE-02 | MUST | §9.5 | "A placeholder that only keeps the empty folder in git does  | [A] |
 | R-STATE-03 | MUST | §9.5 | In record and graph forms, status lives in frontmatter or a  | [A] |
+| R-STATE-04 | MUST | §9.5 | Only a stage's primary artifact carries a gate `status`, and | [EXT] |
+| R-STATE-05 | MUST | §9.5 | Never hand-edit a generated file to approve it. The generato | [EXT, reconciling R-LIB-03] |
+| R-STATE-06 | SHOULD | §9.5 | Record checkpoint decisions in the primary artifact's header | [EXT] |
 | R-HUM-01 | MUST | §9.6 | "Nothing moves to the next stage until a person has read the | [A] |
 | R-HUM-02 | MAY | §9.6 | At each gate the human may: proceed; edit the output file di | [P §5.3] |
 | R-HUM-03 | SHOULD | §9.6 | Editing an output is "the primary way to steer the pipeline. | [R] |
@@ -2711,7 +2778,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-HUM-05 | SHOULD | §9.6 | The U-curve | [A] [P §4.5] |
 | R-HUM-06 | MUST | §9.6 | When an output is wrong, say what is wrong and iterate. "Sta | [F 4.2] |
 | R-RUN-13 | SHOULD | §9.7 | Re-run only the stage that needs it. "If the research output | [P §6.1] |
-| R-RUN-14 | MUST | §9.7 | A stage's Inputs table declares its dependencies. When any o | [O] [P] |
+| R-RUN-14 | MUST | §9.7 | A stage's Inputs table declares its dependencies. When any o | [EXT] [O] [P] |
 | R-RUN-15 | MUST | §9.7 | Flow is one-way: "Don't reverse-engineer earlier stages from | [O] |
 | R-RUN-16 | MUST | §9.7 | Fix upstream, do not work around it downstream | [R beat-markers] |
 | R-RUN-17 | INFO | §9.7 | Error recovery is a manual re-run of the failed stage. | [P] |
@@ -2811,7 +2878,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-SKW-10 | MAY | §14.2 | A skill may carry setup placeholders that the workspace's `s | [R] |
 | R-SKW-11 | SHOULD | §14.2 | Commands are listed literally, with their flags, in a `## Co |  |
 
-Total rules indexed: 316.
+Total rules indexed: 322.
 
 ---
 
