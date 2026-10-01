@@ -1678,7 +1678,26 @@ Walk the workspace cold, as an agent with no memory.
 - [ ] SKILL.md is one to a few screens; depth lives in references and templates
 - [ ] A dry run on a fixture succeeded, and its artifacts passed their own validation
 
-### 17.7 Style guardrails [R]
+### 17.7 Tooling [EXT]
+
+Two scripts ship next to this document. They follow the method's own rules: generated indexes come from a script, and a rule held only by a sentence is a finding.
+
+| Script | What it does | When to run |
+|---|---|---|
+| `tools/validate_workspace.py <root> [--after-setup] [--run <id>] [--status] [--solo]` | The mechanical checks: V1, V2, V3, V3b, V4, V5, V6, V7, V8 (vague pass conditions), V10, V11, V14, V15, W9, R-L0-03, R-XREF-01 in L3 files. It also prints the §9.5 status. | After scaffolding, after setup (`--after-setup`), before each gate (`--run`), and on any workspace you are asked to audit |
+| `tools/build_rule_index.py` | Rebuilds §A6 from the bold rule IDs and checks that every `§` reference and rule ID resolves | After any edit to this document |
+
+The validator does **not** judge quality. W1, W4, W5, W7, V9, V12, and V13, and whether a Human check is a concrete act, still need the walk test.
+
+Running it on Jake's own example workspaces (they predate several extensions) gives these results:
+- CLAUDE.md files of 73 to 75 lines (see §A3);
+- `PILLAR_N` range placeholders (disallowed by R-PH-01 [EXT]);
+- yes/no questions without a `Files:` line;
+- stages with checkpoints but no `## Human check`.
+
+These are expected differences, not errors in his method.
+
+### 17.8 Style guardrails [R]
 
 - Plain English, no jargon: "If a term needs explaining, it is too specialized."
 - Every markdown file should be readable by someone who knows markdown and git basics but has no deep engineering background.
@@ -2551,7 +2570,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 
 ## A6. Rule Index
 
-<!-- GENERATED from the bold rule IDs in Part I by scratchpad/build_rule_index.py. Do not edit by hand; regenerate. -->
+<!-- GENERATED from the bold rule IDs in Part I by tools/build_rule_index.py. Do not edit by hand; regenerate. -->
 
 | ID | Keyword | Section | Title / gist | Sources |
 |---|---|---|---|---|
