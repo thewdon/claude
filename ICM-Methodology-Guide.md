@@ -129,6 +129,8 @@ One AI agent, reading the right files at the right moment, replaces a multi-agen
 | D5 | Is it a repeating sequence producing a deliverable each run, where a human should check the key steps (sequential + reviewable + repeatable)? | **Tier 2: Pipeline** (§6 to §9). | [P §5.1][R] |
 | D6 | Is the repeating unit something else (several pipelines sharing one brand; a record that accumulates; a body of knowledge; an organization; a codebase or vault later agents will edit)? | **Tier 3: another form** (§16). | [A] |
 
+Typical pipeline fits [P][R]: content production, research and analysis, monitoring and digests, reporting, training material and course decks, policy analysis, client deliverables, literature reviews, audit procedures, curriculum development, and code documentation. The method carries across domains (research papers, finance, procedural engineering documents): "same structure, different content." [SS TikTok]
+
 Tiers and forms line up as follows: **Tier 1 = Rooms** (closest to an Umbrella with no pipelines yet [I]); **Tier 2 = the Pipeline form**; **Tier 3 = the other five forms**. Tiers nest: a room grows a pipeline inside it once a sequence in that room starts repeating (§5.6). [I]
 
 ### 1.3 Before building anything
@@ -667,6 +669,30 @@ A voice file (`voice-rules.md` or `_shared/voice.md`) has five parts [R]:
 5. **Strategic Rationale.** Why these choices fit the audience. Usually not loaded.
 
 "Examples over descriptions. Examples are pattern-matchable. Descriptions require interpretation and produce weaker constraints." [R]
+
+### 7.8 Reference discipline: one-way references, canonical sources, recursive routing
+
+**One-way references** [R Pattern 3][O]
+
+- **R-XREF-01 (MUST)** "Every folder points outward to what it needs. No folder points back." If stage 03 references stage 02's component registry, stage 02 references nothing in stage 03. A brand folder that serves several stages references no stage.
+- **R-XREF-02 (SHOULD)** Before adding a reference, ask: "Does the target file already reference my folder? If yes, restructure."
+- **R-XREF-03 (MUST (validation))** The within-run dependency graph is a DAG. This keeps reference growth linear instead of N-squared ("O(n²) maintenance").
+- **R-XREF-04 (SHOULD)** If B would need to point back at A, you probably need a third location C that both reference. [O]
+- **R-XREF-05 (MAY)** A later stage reads an earlier stage's `references/` file instead of copying it ("One canonical source, no duplication"). A workspace may point at a sibling workspace's skill instead of bundling it twice. [R]
+
+**Canonical sources** [R Pattern 5][A][F]
+
+- **R-CANON-01 (MUST)** "Every piece of information has ONE home. Other files point there. They do not duplicate it." "The moment the same rule exists in two files, they will inevitably drift." [R][O] The sanctioned summaries are listed in §8.4.
+- **R-CANON-02 (SHOULD)** Smell test: search the workspace for a specific phrase. "If it appears in more than one file and both instances are meant to be authoritative, one needs to become a pointer."
+- **R-CANON-03 (MAY)** A pointer file can stand in for a copy: "This file is a pointer, not a copy. Do not duplicate content from CONVENTIONS.md here." [R]
+- **R-CANON-04 (SHOULD)** When you remove a duplicate, leave a link where the copy was if anything referenced it. [A]
+- **R-CANON-05 (SHOULD)** Map the information architecture before writing prompts: what exists, where each piece canonically lives, and which tasks need which pieces. [O]
+
+**Recursive routing** [A][P][M]
+
+- **R-ROUTE-01 (SHOULD)** Any folder that grows past easy scanning gets its own `CONTEXT.md` router (shape in §7.6).
+- **R-ROUTE-02 (MUST)** "Each level has its own small catalog, and no level's catalog describes the internals of the level below — it links down and stops." [A]
+- **R-ROUTE-03 (SHOULD)** A folder's `CONTEXT.md` says what does NOT belong there and points to where it lives, for example "Plans/events (like conventions) live in [[../plans/CONTEXT.md]] instead." [M]
 
 ---
 
@@ -2594,6 +2620,19 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-REF-09 | MUST | §7.5 | Brand and identity folders are READ-ONLY during runs: "It's  | [O] [R] |
 | R-REF-10 | SHOULD | §7.5 | Use the person's real assets (their brand, their voice, thei | [PB Claude Design] |
 | R-REF-11 | MAY | §7.5 | Closed registries | [R component-registry] |
+| R-XREF-01 | MUST | §7.8 | "Every folder points outward to what it needs. No folder poi |  |
+| R-XREF-02 | SHOULD | §7.8 | Before adding a reference, ask: "Does the target file alread |  |
+| R-XREF-03 | MUST (validation) | §7.8 | The within-run dependency graph is a DAG. This keeps referen |  |
+| R-XREF-04 | SHOULD | §7.8 | If B would need to point back at A, you probably need a thir | [O] |
+| R-XREF-05 | MAY | §7.8 | A later stage reads an earlier stage's `references/` file in | [R] |
+| R-CANON-01 | MUST | §7.8 | "Every piece of information has ONE home. Other files point  | [O] [R] |
+| R-CANON-02 | SHOULD | §7.8 | Smell test: search the workspace for a specific phrase. "If  |  |
+| R-CANON-03 | MAY | §7.8 | A pointer file can stand in for a copy: "This file is a poin | [R] |
+| R-CANON-04 | SHOULD | §7.8 | When you remove a duplicate, leave a link where the copy was | [A] |
+| R-CANON-05 | SHOULD | §7.8 | Map the information architecture before writing prompts: wha | [O] |
+| R-ROUTE-01 | SHOULD | §7.8 | Any folder that grows past easy scanning gets its own `CONTE |  |
+| R-ROUTE-02 | MUST | §7.8 | "Each level has its own small catalog, and no level's catalo | [A] |
+| R-ROUTE-03 | SHOULD | §7.8 | A folder's `CONTEXT.md` says what does NOT belong there and  | [M] |
 | R-STG-01 | MUST | §8.1 | One stage, one job | [A] [P] |
 | R-STG-02 | SHOULD | §8.1 | Cut where the human naturally pauses | [A] |
 | R-STG-03 | MUST | §8.1 | Surface the judgment call before the expensive work | [A] [P §4.3] |
@@ -2766,7 +2805,7 @@ These close gaps that turned up when an agent built real workspaces from the sou
 | R-SKW-10 | MAY | §14.2 | A skill may carry setup placeholders that the workspace's `s | [R] |
 | R-SKW-11 | SHOULD | §14.2 | Commands are listed literally, with their flags, in a `## Co |  |
 
-Total rules indexed: 300.
+Total rules indexed: 313.
 
 ---
 

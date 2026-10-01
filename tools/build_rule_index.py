@@ -61,5 +61,7 @@ heads |= set(re.findall(r"^### (A\d+\.\d+)", text, re.M))
 scrub = re.sub(r"\[(?:P|M|R|A|F|PB|O)[^\]]*\]", "", text)  # drop source-tag citations like [P §3.2]
 refs = set(re.findall(r"§(A?\d+(?:\.\d+)*)", scrub))
 missing = sorted(r for r in refs if r not in heads)
+undefined = sorted(set(re.findall(r"\b(R-[A-Z0-9]+-\d+|INV-\d+)\b", text)) - set(seen))
+print(f"undefined rule IDs referenced: {undefined or 'none'}")
 print(f"rules indexed: {len(rows)}; duplicate IDs: {dups or 'none'}")
 print(f"section refs: {len(refs)}; unresolved: {missing or 'none'}")
