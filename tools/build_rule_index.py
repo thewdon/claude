@@ -36,10 +36,13 @@ for line in part1.splitlines():
     seen.setdefault(rid, []).append(section)
     tags = " ".join(sorted(set(re.findall(r"\[(?:A|R|P|M|F|PB|O|V|SS|X|I|EXT)\b[^\]]*\]", line))))[:60]
     summary = re.sub(r"\s+", " ", re.sub(r"\*\*[^*]*\*\*", "", line)).strip(" -|")
-    summary = re.sub(r"\[[^\]]*\]", "", summary).strip()[:110]
+    summary = re.sub(r"\[[^\]]*\]", "", summary).strip()
+    if len(summary) > 100:
+        cut = summary[:100]
+        summary = (cut[:cut.rfind(". ") + 1] if ". " in cut[40:] else cut[:cut.rfind(" ")] + "...")
     if not title:
-        title = summary[:60]
-    rows.append((rid, kw, section, title[:70].replace("|", "/"), tags.replace("|", "/")))
+        title = summary
+    rows.append((rid, kw, section, (title if len(title) <= 90 else title[:title[:90].rfind(" ")] + "...").replace("|", "\\|"), tags.replace("|", "\\|")))
 
 dups = {k: v for k, v in seen.items() if len(v) > 1}
 table = ["| ID | Keyword | Section | Title / gist | Sources |", "|---|---|---|---|---|"]

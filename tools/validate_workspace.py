@@ -164,8 +164,10 @@ for pipe in find_pipelines():
                     FAIL.append(f"V8 {cp} audit '{chk}' has a vague pass condition")
             if cls in ("creative", "analytic") and not re.search(r"claims? supported", aud, re.I):
                 WARN.append(f"R-AUD-01b {cp} ({cls}) has no 'Claims supported' audit row")
-        elif cls in ("creative", "analytic", "build"):
-            FAIL.append(f"V8 {cp} is a {cls} stage with no ## Audit")
+        elif cls in ("creative", "analytic", "build") or (gate and gate.group(1) == "auto-advance"):
+            FAIL.append(f"V8 {cp} ({cls or 'auto-advance'}) has no ## Audit")
+        if gate and cls in ("creative", "analytic") and gate.group(1) == "auto-advance":
+            FAIL.append(f"R-HUM-08 {cp} is {cls} but its gate is auto-advance (must be blocking or final approval)")
         inp = strip_dnl(section(t, "Inputs") or "")
         for loc in re.findall(r"`([^`]*(?:/|\.md|\.csv|\.json)[^`]*)`", inp):
             if loc.startswith(("~", "/", "http")):
